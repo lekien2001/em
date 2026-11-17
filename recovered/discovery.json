@@ -1,0 +1,105 @@
+[
+  {
+    "kind": "type",
+    "name": "this.isQuaternion"
+  },
+  {
+    "kind": "type",
+    "name": "P.prototype.isVector3"
+  },
+  {
+    "kind": "type",
+    "name": "this.isTexture"
+  },
+  {
+    "kind": "type",
+    "name": "this.isBox3"
+  },
+  {
+    "kind": "type",
+    "name": "P.prototype.isMatrix4"
+  },
+  {
+    "kind": "type",
+    "name": "this.isMesh"
+  },
+  {
+    "kind": "type",
+    "name": "this.isGroup"
+  },
+  {
+    "kind": "class",
+    "name": "ke",
+    "methods": [
+      "constructor",
+      "computeBoundingBox",
+      "computeBoundingSphere",
+      "copy",
+      "raycast",
+      "getVertexPosition",
+      "bind",
+      "pose",
+      "normalizeSkinWeights",
+      "updateMatrixWorld",
+      "applyBoneTransform"
+    ]
+  },
+  {
+    "kind": "type",
+    "name": "this.isSkinnedMesh"
+  },
+  {
+    "kind": "type",
+    "name": "this.isBone"
+  },
+  {
+    "kind": "class",
+    "name": "P",
+    "methods": [
+      "constructor",
+      "init",
+      "calculateInverses",
+      "pose",
+      "update",
+      "clone",
+      "computeBoneTexture",
+      "getBoneByName",
+      "dispose",
+      "fromJSON",
+      "toJSON"
+    ]
+  },
+  {
+    "kind": "type",
+    "name": "A[g[s]].isBone"
+  },
+  {
+    "kind": "type",
+    "name": "I[g.mesh].isSkinnedMesh"
+  },
+  {
+    "kind": "class",
+    "name": "mv",
+    "methods": [
+      "constructor",
+      "sample",
+      "configure",
+      "reset"
+    ]
+  },
+  {
+    "kind": "class",
+    "name": "xv",
+    "methods": [
+      "constructor",
+      "pose",
+      "reset",
+      "dispose"
+    ]
+  },
+  {
+    "kind": "world",
+    "name": "Ek",
+    "bytes": 5951
+  }
+]

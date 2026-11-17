@@ -1,0 +1,25 @@
+{
+  "name": "em-recovered",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && node scripts/build.mjs",
+    "preview": "node scripts/serve.mjs",
+    "test": "playwright test",
+    "demo": "node scripts/portable.mjs"
+  },
+  "dependencies": { "three": "0.181.0" },
+  "devDependencies": {
+    "@babel/parser": "^7.28.0",
+    "@babel/traverse": "^7.28.0",
+    "@babel/generator": "^7.28.0",
+    "@babel/types": "^7.28.0",
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.0.0",
+    "@types/three": "^0.181.0",
+    "esbuild": "^0.25.0",
+    "typescript": "~5.9.3"
+  }
+}

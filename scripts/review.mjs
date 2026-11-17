@@ -1,0 +1,15 @@
+// Internal QA only; no screenshots or videos are delivered.
+import {chromium,expect} from '@playwright/test';
+import {mkdir,writeFile} from 'node:fs/promises';
+const dir='/tmp/em-natural-review';await mkdir(dir,{recursive:true});
+const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});const errors=[],samples=[];
+try{const page=await browser.newPage({viewport:{width:1366,height:768}});page.on('pageerror',e=>{errors.push(e.message);console.log('PAGE_ERROR',e.message);});page.on('console',m=>{if(m.type()==='error'){errors.push(m.text().slice(0,1800));console.log('CONSOLE_ERROR',m.text().slice(0,1800));}});
+ await page.clock.install();await page.goto('http://127.0.0.1:4173/?qa=1');const host=page.locator('.canvas-host');await page.waitForFunction(()=>document.querySelector('.canvas-host')?.dataset.modelSource||document.querySelector('.world-fallback'),{},{timeout:90000});await expect(host).toHaveAttribute('data-model-source','/assets/sheep.glb',{timeout:90000});await page.clock.pauseAt(await page.evaluate(()=>Date.now()+30));
+ const sample=async name=>{await page.clock.runFor(20);const d=await host.evaluate(el=>({...el.dataset}));const qa=await page.evaluate(()=>{const q=globalThis.__emQA;return {phase:q.phase,seconds:q.activeSeconds,feet:q.controllers.map(c=>c.diagnostics),floor:q.adapters.groundHeight(7.3,-7.7)};});samples.push({name,...d,qa});const style=await page.addStyleTag({content:'[data-immersive-ui],.scene-status{visibility:hidden!important}'});await page.screenshot({path:dir+'/'+name+'.png'});await style.evaluate(el=>el.remove());console.log(name,JSON.stringify(d));};
+ await sample('main');
+ async function seek(target,name){const before=Number(await host.getAttribute('data-scene-time'));await page.evaluate(()=>{if(document.querySelector('main').dataset.playing!=='true')document.querySelector('[data-pause]').click();});await expect(page.locator('main')).toHaveAttribute('data-playing','true');await page.clock.runFor(20);await page.clock.fastForward(Math.max(0,Math.round((target-before)*1000)-20));await page.evaluate(()=>document.querySelector('[data-pause]').click());await expect(page.locator('main')).toHaveAttribute('data-playing','false');await page.clock.runFor(20);await sample(name);}
+ await seek(7.6,'jump');await seek(13.7,'approach-flat-barn');await seek(16.3,'inside-flat-barn');await seek(17.8,'closed-before');await seek(18.1,'closed-after');
+ await page.getByRole('button',{name:'Tùy chọn',exact:true}).click();await page.getByRole('button',{name:'Giảm chuyển động',exact:true}).click();await page.keyboard.press('Escape');
+ await page.locator('canvas').focus();for(let i=0;i<8;i++){if(i)await page.locator('canvas').evaluate((c,n)=>{for(let k=0;k<n;k++)c.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}));},i%2?7:6);await sample('orbit-'+i);}
+ await writeFile(dir+'/report.json',JSON.stringify({errors,samples},null,2));console.log('ERRORS',errors);expect(errors).toEqual([]);
+}finally{await browser.close();}

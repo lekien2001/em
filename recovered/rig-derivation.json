@@ -1,0 +1,16 @@
+{
+  "source": "public/assets/a91596e96e28ba3c.glb",
+  "sourceSha256": "a91596e96e28ba3c1be41219a167ed87f74e01ab65b364c4a317a68d180a5838",
+  "output": "/assets/sheep-natural.glb",
+  "outputSha256": "6d221f4014342f3b58fe975a3608f973f0f84422c4471d85aa0c88dd29c9995c",
+  "earVertices": 1388,
+  "joints": 13,
+  "originalJoints": 11,
+  "geometryUnchanged": true,
+  "animations": [
+    "Idle",
+    "Jump",
+    "Land",
+    "Walk"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "stats": {
+    "knoll": 1,
+    "pad": 1,
+    "clock": 1,
+    "world": 1,
+    "activeTime": 1,
+    "contact": 1,
+    "boxes": 1,
+    "ceiling": 1,
+    "rig": 1
+  },
+  "textureName": "Ei",
+  "notes": "Original React/Three runtime retained; AST-verified integration seams only. No eval or runtime text patching."
+}
