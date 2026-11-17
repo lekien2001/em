@@ -1,8 +1,10 @@
 // This test loads the deliverable with the network disabled; no QA assets/server.
-import {chromium,expect} from '@playwright/test';
-import {readFile,writeFile} from 'node:fs/promises';
+import {chromium,expect as playwrightExpect} from '@playwright/test';
+import {readFile,writeFile,rm} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
+const expect=playwrightExpect.configure({timeout:30000});
 const file=process.argv[2]||'artifacts/em-final.html',html=await readFile(file,'utf8');
+await rm('artifacts/offline.json',{force:true});
 const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const errors=[],network=[];
 try{
