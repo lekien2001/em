@@ -1,7 +1,7 @@
 // Internal QA only; no screenshots or videos are delivered.
 import {chromium,expect} from '@playwright/test';
 import {mkdir,writeFile} from 'node:fs/promises';
-const dir='/tmp/em-natural-review';await mkdir(dir,{recursive:true});
+const dir='/tmp/em-modular-review';await mkdir(dir,{recursive:true});
 const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});const errors=[],samples=[];
 try{const page=await browser.newPage({viewport:{width:1366,height:768}});page.on('pageerror',e=>{errors.push(e.message);console.log('PAGE_ERROR',e.message);});page.on('console',m=>{if(m.type()==='error'){errors.push(m.text().slice(0,1800));console.log('CONSOLE_ERROR',m.text().slice(0,1800));}});
  await page.clock.install();await page.goto('http://127.0.0.1:4173/?qa=1');const host=page.locator('.canvas-host');await page.waitForFunction(()=>document.querySelector('.canvas-host')?.dataset.modelSource||document.querySelector('.world-fallback'),{},{timeout:90000});await expect(host).toHaveAttribute('data-model-source','/assets/sheep.glb',{timeout:90000});await page.clock.pauseAt(await page.evaluate(()=>Date.now()+30));

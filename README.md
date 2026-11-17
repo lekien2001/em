@@ -1,14 +1,10 @@
-# Êm — Bản hoàn thiện chuyển động và vật liệu
+# Êm
 
-Website thư giãn 3D chạy trên trình duyệt. Bản này được khôi phục từ HTML hai chuồng người dùng cung cấp, SHA-256 `bfd361e5294b94b54fd5f5ff30b802858066182b64ccbc224b9aee6e2cac8a1e`.
+Website thư giãn 3D trên trình duyệt: cừu ra/vào chuồng, nhảy rào, thảm cỏ vải nỉ, ba âm thanh tổng hợp và hẹn giờ. Chạy hoàn toàn ở máy người dùng, không cần tài khoản, API hoặc máy chủ ứng dụng.
 
-Repository lưu đầu vào để chỉnh sửa và build: `src/`, `public/assets/`, các script, cấu hình và kiểm thử. `dist/`, `artifacts/`, HTML bàn giao, bản HTML gốc và `node_modules/` được bỏ qua bởi Git.
+## Cài đặt và chạy
 
-Do chỉ còn HTML, cấu trúc component và tên biến TypeScript trước lần bundle cũ không thể khôi phục hoàn toàn. Runtime cũ đã được định dạng và tách tài nguyên trong `src/recovered-runtime.js`; nó vẫn chứa mã thư viện đã gộp từ bản cũ. Phần chỉnh mới nằm riêng trong `src/enhancements.ts`. Thư mục `recovered/` giữ dữ liệu tham chiếu phục vụ việc phục hồi và tái tạo runtime, không phải kết quả production build mới.
-
-## Chạy và kiểm tra
-
-Cần Node.js 22.12+ và npm. Mô hình/texture đã có trong `public/assets`, không cần tải ảnh hoặc API khác.
+Cần Node.js 22.12+ và npm.
 
 ```sh
 npm ci
@@ -16,32 +12,47 @@ npm run build
 npm run preview
 ```
 
-Preview tại `http://127.0.0.1:4173`. Giữ preview chạy và mở terminal thứ hai để kiểm thử. Kiểm thử dùng Chromium `/usr/bin/chromium` và SwiftShader:
+Mở `http://localhost:4173`. Sau khi chỉnh mã, chạy lại `npm run build`; preview đọc bản build mới. Toàn bộ ảnh và mô hình có trong `public/assets/`.
+
+## Kiểm thử và xuất HTML
 
 ```sh
 npm test
 npm run demo
+npm run verify:offline
+npm run verify:source
 ```
 
-HTML bàn giao: `artifacts/em-final.html`. Chỉ bàn giao một HTML, không ảnh/video nghiệm thu. Bản gốc tải lên được giữ riêng trong `baseline/` khi còn trong workspace.
+Playwright tự khởi động build/preview khi chưa có preview đang chạy. Trên môi trường có Chromium ở `/usr/bin/chromium`, kiểm thử dùng trình duyệt đó; nơi khác chạy `npx playwright install chromium` trước. Có thể chỉ định trình duyệt bằng `CHROMIUM_PATH`. Các kiểm thử WebGL dùng SwiftShader để chạy ổn định trong cloud, không xác nhận FPS GPU máy thật.
 
-## Phần được giữ và phần chỉnh mới
+`npm run demo` tạo **`artifacts/em-final.html`** nhúng toàn bộ mã, ảnh, GLB và âm thanh tổng hợp, mở độc lập khi không có mạng. Script kiểm tra offline và phục hồi nguồn cần Chromium hệ thống như môi trường cloud.
 
-- React, giao diện tối giản, âm thanh, deadline hẹn giờ và bộ dựng Three.js gốc được giữ từ HTML; không viết lại giao diện hoặc tạo lại nhân vật.
-- `src/recovered-runtime.js` là mã đã tách tài nguyên và định dạng lại. `scripts/patch-runtime.mjs` dùng AST, kiểm tra đúng một vị trí cho từng thay đổi; không eval hoặc thay chuỗi tùy tiện khi chạy web. Bản tham chiếu chưa sửa nằm trong `recovered/`.
-- `src/enhancements.ts` chứa lớp hoạt ảnh phụ, IK chân theo quãng đường, khôi phục pose gốc để không tích lũy khi pause, cùng hiệu chỉnh vật liệu.
-- Chuồng số 2 dùng cao độ -0.15, bằng vùng hàng rào. Gò Gaussian cục bộ được gỡ; sàn, cỏ/hoa/đá, bờ và mặt nước cùng lấy cao độ mới. Các lớp đồi xa, vị trí ngang và camera giữ nguyên.
-- `scripts/derive-rig.mjs` giữ nguyên geometry/texture/bốn clip và 11 xương gốc; chỉ bổ sung hai xương tai cùng trọng số trên đúng 1.388 đỉnh tai. GLB gốc giữ nguyên SHA-256, không tái tạo hình dáng cừu.
-- Giữ 144.171 cụm cỏ, 639 bụi hoa, ba cừu, nhịp 18/12 giây và khoảng cách 6/4 giây. Mật độ thực vật không tự giảm trên desktop.
+## Mã nguồn
 
-## HTML tự chứa bản nguồn phục hồi
+Ứng dụng hiện build trực tiếp từ TS/TSX có TypeScript strict. React/React DOM 19.3.1 và Three.js 0.181.0 được lấy từ npm, khóa bằng `package-lock.json`; không nạp runtime hoặc thư viện được phục hồi từ bundle cũ.
 
-HTML mới có một khối `em-project-source` dạng JSON/gzip, không thực thi và không ảnh hưởng điều khiển. Khối này lưu mã nguồn, cấu hình và hướng dẫn; tài nguyên đã nhúng được tham chiếu theo SHA-256. Mô hình gốc có thể khôi phục chính xác từ phần BIN giữ nguyên trong GLB dẫn xuất.
+- `src/app/`, `src/ui/`: điều phối App, thanh điều khiển, bảng nổi, giao diện cảm ứng, focus và tự ẩn.
+- `src/session/`, `src/audio/`: phiên, deadline hẹn giờ, lưu lựa chọn và bộ phát Web Audio độc lập với cảnh.
+- `src/scene/`: bộ dựng cảnh, camera, địa hình, cây/cỏ/hoa, chuồng, bóng, đồng hồ và hoạt ảnh cừu.
+- `src/assets/`: danh mục, bộ tải có cache và giải phóng tài nguyên dùng chung theo định danh đối tượng.
+- `scripts/`: build, preview, đóng gói, phục hồi nguồn, kiểm tra offline và công cụ QA.
+
+Các lệnh build không sinh lại mã nguồn, không cần Blender hoặc các script phục hồi. Mô hình đã tối ưu được giữ nguyên; chỉ chạy `scripts/derive-rig.mjs` khi chủ động cần tái xuất dẫn xuất tai từ mô hình gốc.
+
+## Mốc đối chiếu và nguồn phục hồi
+
+Mốc trước refactor là commit `e1fff41`; cấu trúc component nguyên bản đã mất khi chỉ còn HTML. Các module hiện tại được tái cấu trúc theo hành vi đã đối chiếu, không phải mã TypeScript gốc được lấy lại nguyên văn.
+
+`recovered/` giữ bản tham chiếu và nhật ký chuyển mã; thư mục này **không nằm trong đồ thị production build**. Script trong `recovered/migration/` là hồ sơ các bước trung gian, không chạy lại trên nguồn hiện tại.
+
+HTML bàn giao tiếp tục chứa bản sao nguồn nén, bao gồm TSX. Để phục hồi vào một thư mục trống:
 
 ```sh
 node scripts/restore-project.mjs artifacts/em-final.html /tmp/em-restored
 ```
 
-Không cần thêm một ZIP bàn giao. Lần sau chỉ có HTML vẫn có thể lấy lại bộ dự án trước khi chỉnh tiếp. Bộ phục hồi chỉ ghi tệp trong thư mục đích và không tự chạy npm hoặc mã trong archive.
+Bộ phục hồi kiểm tra SHA-256, ghi nguồn và tài nguyên nhưng không tự thực thi mã hoặc cài dependency. `npm run verify:source` đối chiếu từng file bằng checksum, gồm mô hình cừu gốc được phục hồi chính xác.
 
-Thông tin kiểm chứng ở `docs/verification.md`. Các giấy phép thư viện gốc được giữ trong `THIRD_PARTY_NOTICES.txt` và trong HTML đóng gói.
+Cấu trúc và kiểm chứng mới ở [docs/modularization.md](docs/modularization.md). Số đo trước refactor ở [docs/verification.md](docs/verification.md). Giấy phép thư viện/biểu tượng được giữ trong `THIRD_PARTY_NOTICES.txt` và HTML xuất ra.
+
+Git lưu nguồn, tài nguyên, cấu hình và kiểm thử; bỏ qua `node_modules/`, `dist/`, `artifacts/`, bản HTML đối chiếu trong `baseline/` và báo cáo kiểm thử.

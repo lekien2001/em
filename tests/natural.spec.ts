@@ -1,9 +1,9 @@
 import {test,expect} from '@playwright/test';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
-import boot from '../src/recovered-runtime.js';
-import {prepareControllers,type Actor,type Adapters} from '../src/enhancements';
-const api:any=boot({testMode:true});
+import {api} from './support/scene-api';
+import {prepareControllers,type Actor,type Adapters} from '../src/scene/sheep/natural';
+
 async function rig(file='sheep-natural.glb'){
  const loader=new api.GLTFLoader();loader.register(()=>({name:'geometry-only-qa',loadTexture:async()=>new api.Texture()}));const bytes=fs.readFileSync('public/assets/'+file);return loader.parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
 }

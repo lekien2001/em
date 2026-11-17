@@ -1,9 +1,9 @@
 import {test,expect} from '@playwright/test';
 import {Raycaster,Vector3} from 'three';
 import fs from 'node:fs';
-import boot from '../src/recovered-runtime.js';
-import {prepareControllers,type Actor,type Adapters} from '../src/enhancements';
-const api:any=boot({testMode:true}),a:Adapters={...api,getPose:api.sheepPose,getAge:api.sheepAge,barns:api.BARNS};
+import {api} from './support/scene-api';
+import {prepareControllers,type Actor,type Adapters} from '../src/scene/sheep/natural';
+const a:Adapters={...api,getPose:api.sheepPose,getAge:api.sheepAge,barns:api.BARNS};
 async function actor(){const loader=new api.GLTFLoader();loader.register(()=>({name:'geometry-only-qa',loadTexture:async()=>new api.Texture()}));const b=fs.readFileSync('public/assets/sheep-natural.glb');return new api.SheepActor(await loader.parseAsync(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),''));}
 function setPose(actor:Actor,t:number,delta=.05){const p=api.sheepPose(t,0);actor.root.position.set(p.x,api.groundHeight(p.x,p.z)+p.y,p.z);actor.root.rotation.y=p.yaw;actor.pose(p.state,p.clipTime,delta,1,p.visible);return p;}
 

@@ -10,7 +10,7 @@ const js=(await embed(await readFile('dist/em.js','utf8'))).replaceAll('</script
 const icon=await embed('/assets/favicon.svg');
 // Inert, compressed source backup. Assets already embedded above are referenced
 // by digest instead of duplicated, so a later HTML-only handover stays editable.
-const files={};async function sourceFiles(dir){for(const item of await readdir(dir,{withFileTypes:true}).catch(()=>[])){const name=dir+'/'+item.name;if(item.isDirectory())await sourceFiles(name);else if(/\.(?:ts|js|mjs|json|css|md|txt)$/.test(name))files[name]=await readFile(name,'utf8');}}
+const files={};async function sourceFiles(dir){for(const item of await readdir(dir,{withFileTypes:true}).catch(()=>[])){const name=dir+'/'+item.name;if(item.isDirectory())await sourceFiles(name);else if(/\.(?:tsx?|js|mjs|json|css|html|md|txt)$/.test(name))files[name]=await readFile(name,'utf8');}}
 for(const dir of ['src','scripts','tests','recovered','docs'])await sourceFiles(dir);
 for(const name of ['README.md','package.json','package-lock.json','tsconfig.json','playwright.config.ts','THIRD_PARTY_NOTICES.txt','.gitignore'])files[name]=await readFile(name,'utf8');
 const packed=gzipSync(Buffer.from(JSON.stringify({schema:1,files,inlineAssets:assets})),{level:9}),snapshot=JSON.stringify({encoding:'gzip+base64',sha256:createHash('sha256').update(packed).digest('hex'),data:packed.toString('base64')});
