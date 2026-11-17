@@ -3,7 +3,7 @@ import type { Sound } from "../audio/catalog";
 import type { RelaxationSession } from "../session/useRelaxationSession";
 import type { SheepSpeed } from "../types";
 import type { useImmersiveControls } from "./useImmersiveControls";
-export type Panel = "library" | "volume" | "timer" | "options" | "about" | null;
+export type Panel = "library" | "volume" | "timer" | "options" | "about" | "face" | null;
 /** Shared UI data; each component receives only its required fields via Pick. */
 export type ControlsProps = {
   session: RelaxationSession;

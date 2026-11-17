@@ -29,6 +29,7 @@ export function SceneView(props: SceneProps) {
     [props.playing, props.reduced, props.speed],
   );
   useEffect(() => renderer.current?.home(), [props.reset]);
+  useEffect(() => renderer.current?.setFace(props.face ?? null), [props.face]);
   useEffect(() => {
     if (props.sessionId) renderer.current?.reset();
   }, [props.sessionId]);

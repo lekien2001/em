@@ -9,6 +9,7 @@ export function SceneOptions({
   setReset,
   setShowCount,
   setSpeed,
+  setPanel,
   showCount,
   speed,
 }: Pick<
@@ -20,6 +21,7 @@ export function SceneOptions({
   | "setReset"
   | "setShowCount"
   | "setSpeed"
+  | "setPanel"
   | "showCount"
   | "speed"
 >) {
@@ -40,6 +42,7 @@ export function SceneOptions({
         </button>
       </div>
       <div className={"scene-options"}>
+        <button className="small-option face-open" aria-label="Mặt cừu của bạn" title="Mặt cừu của bạn" onClick={() => setPanel("face")}><span aria-hidden="true">☺</span><span>Mặt cừu của bạn</span></button>
         <label className={"speed-control"}>
           <span>{"Tốc độ:"}</span>
           <select

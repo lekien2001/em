@@ -2,6 +2,7 @@ export type SoundId = "rain" | "stream" | "brown";
 export type SheepSpeed = "slow" | "medium";
 export type Quality = "low" | "balanced" | "high";
 export type DurationMinutes = 0 | 15 | 30 | 60;
+export type FaceAppearance = { readonly canvas: HTMLCanvasElement; readonly revision: number };
 export type SceneProps = {
   playing: boolean;
   reduced: boolean;
@@ -10,6 +11,8 @@ export type SceneProps = {
   sessionId: number;
   onCount(): void;
   onReady(ready: boolean): void;
+  face?: FaceAppearance | null;
+  onFaceError?(message: string): void;
 };
 export type ImmersionState = {
   playing: boolean;

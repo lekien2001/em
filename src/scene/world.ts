@@ -22,6 +22,8 @@ import {
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import type { AssetLoader } from "../assets/AssetLoader";
 import type { Quality } from "../types";
+import type { FaceAppearance } from "../types";
+import { FaceAttachment } from "../face/FaceAttachment";
 import { BARNS, JUMP_YAW } from "./barnLayout";
 import { createBarns } from "./barns";
 import { harmonize } from "./materials";
@@ -392,9 +394,15 @@ export async function createWorld(scene: Object3D, assets: AssetLoader) {
           ? RETURN_PATH.sample(age).distance
           : RETURN_PATH.length + ENTRANCE_PATH.sample(age).distance,
   });
+  let personalFace: FaceAttachment | undefined;
   const world = {
     root: root,
     actors: actors,
+    setFace(face: FaceAppearance | null) {
+      if (!face) { personalFace?.dispose(); personalFace = undefined; return; }
+      personalFace ??= new FaceAttachment(actors.map(actor => actor.root));
+      personalFace.set(face);
+    },
     barnTriangles: barns.triangles,
     barnDrawCalls: barns.drawCalls,
     doorState: barns.doorState,
@@ -444,6 +452,7 @@ export async function createWorld(scene: Object3D, assets: AssetLoader) {
       grass.quality(Z);
     },
     disposeActors() {
+      personalFace?.dispose(); personalFace = undefined;
       actors.forEach((Z) => Z.dispose());
     },
   };

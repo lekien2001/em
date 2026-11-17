@@ -5,11 +5,15 @@ export function Dialog({
   children,
   close,
   compact = false,
+  className = "",
+  backdropClassName = "",
 }: {
   title: string;
   children: ReactNode;
   close(): void;
   compact?: boolean;
+  className?: string;
+  backdropClassName?: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -20,9 +24,9 @@ export function Dialog({
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();
       if (event.key !== "Tab") return;
-      const controls = container.current?.querySelectorAll<HTMLElement>(
+      const controls = Array.from(container.current?.querySelectorAll<HTMLElement>(
         'button, select, input, [tabindex="0"]',
-      );
+      ) ?? []).filter(el => !el.matches(':disabled, [inert], [type="hidden"]') && el.getClientRects().length > 0 && !el.closest('[inert]'));
       if (!controls?.length) return;
       const first = controls[0],
         last = controls[controls.length - 1];
@@ -42,14 +46,14 @@ export function Dialog({
   }, []);
   return (
     <div
-      className="modal-backdrop"
+      className={`modal-backdrop ${backdropClassName}`}
       onClick={(event) => {
         if (event.target === event.currentTarget) close();
       }}
     >
       <div
         ref={container}
-        className={`modal ${compact ? "modal-compact" : ""}`}
+        className={`modal ${compact ? "modal-compact" : ""} ${className}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}

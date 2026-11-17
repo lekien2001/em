@@ -21,7 +21,7 @@ test('missing storage and audio failure retain actionable controls',async({page}
 });
 
 test('sound/volume persist and timer fades, pauses and expires by real deadline',async({page})=>{
- await fallback(page);await page.clock.install();await page.goto('/');await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+ await fallback(page);await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.clock.pauseAt(new Date('2026-01-01T00:01:00Z'));await page.goto('/');
  await page.getByRole('button',{name:/^Chọn âm thanh/}).click();await page.getByRole('button',{name:/^Tiếng suối/}).click();await expect.poll(()=>page.evaluate(()=>localStorage.getItem('em:sound'))).toBe('stream');
  await page.getByRole('button',{name:'Âm lượng',exact:true}).click();const slider=page.getByRole('slider',{name:'Âm lượng',exact:true});await slider.focus();await slider.press('End');await expect.poll(()=>page.evaluate(()=>localStorage.getItem('em:volume'))).toBe('1');await page.keyboard.press('Escape');
  await page.getByRole('button',{name:/^Hẹn giờ:/}).click();await page.getByRole('button',{name:'15 phút',exact:true}).click();await expect(page.locator('main')).toHaveAttribute('data-remaining','900000');

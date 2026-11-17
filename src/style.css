@@ -1972,3 +1972,48 @@ button:active {
   line-height: 1.6;
   letter-spacing: normal;
 }
+
+/* Personal photo editor. Its controls do not change the surrounding scene UI. */
+.modal-backdrop.face-editor-backdrop { place-items: center; padding: 20px; background: #050d1a99; backdrop-filter: blur(6px); }
+.face-dialog.modal {
+  width: min(860px, calc(100vw - 32px));
+  max-width: 860px;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  padding: 24px;
+  font-family: var(--font-ui);
+}
+.face-description, .face-hint { color: #b7c6cc; font-size: 13px; line-height: 1.6; }
+.face-description { margin: 0 0 20px; }
+.face-hint { margin: 10px 0; text-align: center; }
+.face-editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+.face-edit-column { min-width: 0; }
+.face-crop { display: block; width: 100%; max-width: 276px; aspect-ratio: 3 / 4; height: auto; margin: 0 auto; border-radius: 14px; background: #172d35; cursor: grab; touch-action: none; }
+.face-crop:active { cursor: grabbing; }
+.face-crop:focus-visible { outline: 2px solid #ccb7e8; outline-offset: 4px; }
+.face-empty { min-height: 368px; border: 1px dashed #8ca5ac66; border-radius: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #c3cdd2; background: #1b343d55; }
+.face-empty > span { font: 64px/1 var(--font-ui); color: #c6b2df; }
+.face-empty p { line-height: 1.8; }
+.face-dialog button { min-height: 44px; border-radius: 14px; padding: 10px 16px; background: #ffffff09; border: 1px solid #b8c9ce33; color: #e9e5ee; font: 500 14px/1.4 var(--font-ui); }
+.face-dialog .icon-button { padding: 8px; min-width: 44px; }
+.face-dialog button:disabled { opacity: .4; cursor: default; }
+.face-preview { width: 100%; height: 368px; border-radius: 20px; overflow: hidden; background: radial-gradient(ellipse at 50% 38%, #39515e, #1c3039); }
+.face-preview canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.face-range { display: grid; grid-template-columns: 76px minmax(0, 1fr) 48px; align-items: center; gap: 10px; min-height: 44px; color: #d7dce1; font-size: 13px; }
+.face-range input { width: 100%; min-width: 0; accent-color: #cab6e5; }
+.face-range output { text-align: right; font-variant-numeric: tabular-nums; }
+.face-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; border-top: 1px solid #ffffff10; padding-top: 16px; }
+.face-actions .face-apply { margin-left: auto; background: #c6b4df; color: #1b2431; }
+.face-error { color: #f0c0bd; font-size: 13px; line-height: 1.6; }
+.scene-options .face-open { gap: 10px; }
+@media (max-width: 700px) {
+  .modal-backdrop.face-editor-backdrop { padding: 12px; }
+  .face-dialog.modal { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 18px; }
+  .face-editor-grid { grid-template-columns: 1fr; gap: 18px; }
+  .face-preview { height: 300px; }
+  .face-actions { position: sticky; bottom: -18px; padding: 12px 0; background: #182b34; }
+  .face-actions button { padding: 10px; font-size: 13px; }
+  .face-empty { min-height: 260px; }
+  .scene-options .face-open { width: 44px; height: 44px; min-height: 44px; }
+  .scene-options .face-open span:last-child { display: none; }
+}

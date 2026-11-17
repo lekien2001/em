@@ -10,7 +10,10 @@ import { Toolbar } from "../ui/Toolbar";
 import { TouchControls } from "../ui/TouchControls";
 import { Panel } from "../ui/types";
 import { useImmersiveControls } from "../ui/useImmersiveControls";
+import { FaceEditor } from "../face/FaceEditor";
+import { usePersonalFace } from "../face/usePersonalFace";
 export function App() {
+  const personalFace = usePersonalFace();
   let session = useRelaxationSession(),
     [count, setCount] = React.useState(0),
     [showCount, setShowCount] = React.useState(
@@ -80,6 +83,7 @@ export function App() {
       setReset={setReset}
       setShowCount={setShowCount}
       setSpeed={setSpeed}
+      setPanel={setPanel}
       showCount={showCount}
       speed={speed}
     />
@@ -128,6 +132,8 @@ export function App() {
           sessionId={sessionId}
           onCount={() => setCount((x) => x + 1)}
           onReady={setSceneReady}
+          face={personalFace.photo?.face ?? null}
+          onFaceError={personalFace.setError}
         />
       </React.Suspense>
       <div className={"scene-shade"} aria-hidden={"true"} />
@@ -195,6 +201,8 @@ export function App() {
           <button onClick={() => setPanel("library")}>{"Chọn bài khác"}</button>
         </div>
       )}
+      {personalFace.error && <div className="audio-error" role="alert">{personalFace.error}<button onClick={personalFace.restore}>Khôi phục</button></div>}
+      {panel === "face" && <FaceEditor face={personalFace} close={closePanel} sceneReady={sceneReady} />}
 
       <SessionPanels
         closePanel={closePanel}

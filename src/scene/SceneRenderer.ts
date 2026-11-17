@@ -17,7 +17,7 @@ import {
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { AssetLoader } from "../assets/AssetLoader";
 import { disposeObject } from "../assets/dispose";
-import type { SceneProps } from "../types";
+import type { FaceAppearance, SceneProps } from "../types";
 import { CAMERA_LIMITS, MAIN_CAMERA } from "./camera";
 import { FrameMonitor } from "./FrameMonitor";
 import { QualityController } from "./quality";
@@ -43,6 +43,7 @@ export type SceneHandle = {
   sync(): void;
   home(immediate?: boolean): void;
   reset(): void;
+  setFace(face: FaceAppearance | null): void;
   dispose(): void;
 };
 export function createSceneRenderer(
@@ -381,6 +382,17 @@ export function createSceneRenderer(
   const handle = {
     sync: sync,
     home: resetCamera,
+    setFace(face: FaceAppearance | null) {
+      if (disposed || !world) return;
+      try {
+        world.setFace(face);
+        host.dataset.personalFace = face ? "true" : "false";
+        shadowPhase = NaN;
+        scheduleFrame();
+      } catch {
+        getProps().onFaceError?.("Không thể gắn ảnh lên model cừu này. Mặt cừu hiện tại được giữ nguyên.");
+      }
+    },
     reset() {
       clock.reset(performance.now());
       previousPhase = 4.4;
@@ -396,6 +408,7 @@ export function createSceneRenderer(
         disposeObject(world.root);
         return;
       }
+      handle.setFace(getProps().face ?? null);
       if (
         (world.quality(quality.value),
         world.resize(camera.aspect, host.clientHeight),
