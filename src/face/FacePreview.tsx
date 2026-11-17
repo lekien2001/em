@@ -25,18 +25,20 @@ export function FacePreview(props: Props) {
     let output: HTMLCanvasElement | undefined,
       frame = 0,
       disposed = false,
+      failed = false,
       timer: ReturnType<typeof setTimeout> | undefined;
     const scene = new Scene(),
       camera = new PerspectiveCamera(32, 1, .05, 30);
     const render = () => {
       frame = 0;
-      if (!disposed && renderer && !document.hidden) renderer.render(scene, camera);
+      if (!disposed && !failed && renderer && !document.hidden) renderer.render(scene, camera);
     };
     const invalidate = () => {
-      if (!disposed && !frame) frame = requestAnimationFrame(render);
+      if (!disposed && !failed && !frame) frame = requestAnimationFrame(render);
     };
     const fail = () => {
       if (!disposed) {
+        failed = true;
         setError("Lúc này chưa thể xem trước 3D. Hãy mở bằng trình duyệt có hỗ trợ WebGL.");
         current.current.onReady(false);
       }
@@ -98,7 +100,7 @@ export function FacePreview(props: Props) {
         refresh.current = () => {
           clearTimeout(timer);
           timer = setTimeout(() => {
-            if (disposed || !attachment) return;
+            if (disposed || failed || !attachment) return;
             try {
               const {
                   source,

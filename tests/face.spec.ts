@@ -274,6 +274,13 @@ test("real WebGL: choose, crop, preview, apply to three animated sheep, edit/can
   });
   await openEditor(page);
   await expect(page.locator(".face-empty")).toBeVisible();
+  await page.getByLabel("Chọn ảnh khuôn mặt").setInputFiles(file);
+  await expect(page.getByRole("button", { name: "Áp dụng", exact: true })).toBeEnabled();
+  await page.locator(".face-preview canvas").evaluate(canvas => canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true })));
+  await expect(page.getByRole("button", { name: "Áp dụng", exact: true })).toBeDisabled();
+  await page.getByRole("slider", { name: "Xoay ảnh" }).fill("30");
+  await page.waitForTimeout(200);
+  await expect(page.getByRole("button", { name: "Áp dụng", exact: true })).toBeDisabled();
   expect(errors).toEqual([]);
 });
 test("fallback: invalid image is explained, apply disabled, keyboard focus stays in editor", async ({

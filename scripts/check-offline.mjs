@@ -36,7 +36,7 @@ try{
  await fallback.evaluate(()=>{window.Worker=class{constructor(){throw new Error('Worker blocked by test');}};const get=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return /webgl/.test(type)?null:get.call(this,type,...args);};});
  await fallback.setContent(html,{waitUntil:'load',timeout:180000});
  await fallback.getByRole('button',{name:'Bắt đầu thư giãn',exact:true}).click();await expect(fallback.locator('main')).toHaveAttribute('data-playing','true');
- await fallback.keyboard.press('Tab');await fallback.keyboard.press('Space');await expect(fallback.locator('main')).toHaveAttribute('data-playing','false');
+ await fallback.keyboard.press('Tab');await expect(fallback.getByRole('button',{name:'Tạm dừng phiên thư giãn',exact:true})).toBeFocused();await fallback.keyboard.press('Space');await expect(fallback.locator('main')).toHaveAttribute('data-playing','false');
  report.workerAndWebglFallback=true;expect(errors).toEqual([]);expect(network).toEqual([]);await fallbackContext.close();
  await writeFile('artifacts/offline.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }finally{await browser.close();}
