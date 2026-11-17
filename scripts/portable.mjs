@@ -1,7 +1,7 @@
 import {readFile,writeFile,mkdir,readdir} from 'node:fs/promises';
 import {gzipSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
-const types={'.png':'image/png','.webp':'image/webp','.glb':'model/gltf-binary','.svg':'image/svg+xml'},cache=new Map(),assets=[];
+const types={'.png':'image/png','.webp':'image/webp','.glb':'model/gltf-binary','.svg':'image/svg+xml','.woff2':'font/woff2'},cache=new Map(),assets=[];
 async function embed(source){const urls=[...new Set(source.match(/\/assets\/[a-zA-Z0-9_.-]+/g)||[])];for(const url of urls){
  // Legacy modelSource diagnostic, not a loader URL. All real URLs must exist.
  if(url==='/assets/sheep.glb')continue;

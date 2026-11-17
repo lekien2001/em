@@ -9,7 +9,7 @@ const snapshot=JSON.parse(gunzipSync(packed)),base=path.resolve(destination);if(
 async function write(name,bytes){const file=path.resolve(base,name);if(!file.startsWith(base+path.sep))throw new Error('Invalid path in archive');await mkdir(path.dirname(file),{recursive:true});await writeFile(file,bytes);}
 for(const [file,source]of Object.entries(snapshot.files))await write(file,source);
 const wanted=new Map(snapshot.inlineAssets.map(a=>[a.sha256,a.url])),found=new Set();
-for(const m of html.matchAll(/data:(?:image\/png|image\/webp|image\/svg\+xml|model\/gltf-binary);base64,([A-Za-z0-9+/=]+)/g)){
+for(const m of html.matchAll(/data:(?:image\/png|image\/webp|image\/svg\+xml|model\/gltf-binary|font\/woff2);base64,([A-Za-z0-9+/=]+)/g)){
  const bytes=Buffer.from(m[1],'base64'),sha=digest(bytes),url=wanted.get(sha);if(url&&!found.has(sha)){await write('public'+url,bytes);found.add(sha);}
 }
 if(found.size!==wanted.size)throw new Error('Missing embedded assets');

@@ -1,5 +1,64 @@
+/* be-vietnam-pro-vietnamese-400-normal */
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(/assets/be-vietnam-pro-vietnamese-400-normal.woff2) format('woff2');
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* be-vietnam-pro-latin-ext-400-normal */
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(/assets/be-vietnam-pro-latin-ext-400-normal.woff2) format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* be-vietnam-pro-latin-400-normal */
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(/assets/be-vietnam-pro-latin-400-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+/* be-vietnam-pro-vietnamese-500-normal */
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url(/assets/be-vietnam-pro-vietnamese-500-normal.woff2) format('woff2');
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+/* be-vietnam-pro-latin-ext-500-normal */
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url(/assets/be-vietnam-pro-latin-ext-500-normal.woff2) format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* be-vietnam-pro-latin-500-normal */
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url(/assets/be-vietnam-pro-latin-500-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
 :root {
-  font-family: Arial, Helvetica, sans-serif;
+  --font-ui: "Be Vietnam Pro", Arial, Helvetica, sans-serif;
+  font-family: var(--font-ui);
   color: #eee9df;
   background: #111e33;
   font-weight: 400;
@@ -210,9 +269,7 @@ button:active {
 }
 .intro h1 {
   font:
-    400 clamp(38px, 4.5vw, 70px) / 1.22 Georgia,
-    "Times New Roman",
-    serif;
+    400 clamp(38px, 4.5vw, 70px) / 1.22 var(--font-ui);
   letter-spacing: -1.8px;
   margin: 18px 20px 15px;
   text-shadow: 0 2px 24px #0b1429;
@@ -221,9 +278,7 @@ button:active {
   color: #c7b1e2;
 }
 .intro p {
-  font:
-    italic 17px/1.7 Georgia,
-    serif;
+  font: normal 17px/1.7 var(--font-ui);
   color: #c5c8cf;
   letter-spacing: 0.1px;
   margin: 0 15px;
@@ -238,9 +293,7 @@ button:active {
 }
 .sheep-count > span {
   display: block;
-  font:
-    italic 64px/1 Georgia,
-    serif;
+  font: normal 64px/1 var(--font-ui);
   color: #ece7e3b3;
   letter-spacing: -3px;
 }
@@ -396,8 +449,7 @@ button:active {
 }
 .track-title {
   font:
-    20px Georgia,
-    serif;
+    20px var(--font-ui);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -586,9 +638,7 @@ button:active {
   width: 90%;
   transform: translate(-50%);
   text-align: center;
-  font:
-    italic 24px/1.5 Georgia,
-    serif;
+  font: normal 24px/1.5 var(--font-ui);
   color: #d5d8df8c;
   pointer-events: none;
 }
@@ -634,8 +684,7 @@ button:active {
 }
 .modal h2 {
   font:
-    29px/1.3 Georgia,
-    serif;
+    29px/1.3 var(--font-ui);
   margin: 13px 0 0;
 }
 .modal-description {
@@ -685,8 +734,7 @@ button:active {
 }
 .sound-card strong {
   font:
-    18px Georgia,
-    serif;
+    18px var(--font-ui);
 }
 .sound-card-text > span:last-child {
   font-size: 10px;
@@ -751,8 +799,7 @@ button:active {
 }
 .about-copy {
   font:
-    16px/1.9 Georgia,
-    serif;
+    16px/1.9 var(--font-ui);
   color: #c7d0d8;
 }
 .audio-error {
@@ -1179,8 +1226,7 @@ button:active {
 }
 .header nav button {
   font:
-    19px Georgia,
-    serif;
+    19px var(--font-ui);
   color: #e5dfd8;
 }
 .header nav button svg,
@@ -1192,15 +1238,12 @@ button:active {
 }
 .intro h1 {
   font:
-    400 clamp(44px, 5.5vw, 82px) / 1.2 Georgia,
-    serif;
+    400 clamp(44px, 5.5vw, 82px) / 1.2 var(--font-ui);
   letter-spacing: -1.8px;
   margin: 3px 20px 12px;
 }
 .intro p {
-  font:
-    italic clamp(16px, 1.7vw, 25px) / 1.65 Georgia,
-    serif;
+  font: normal clamp(16px, 1.7vw, 25px) / 1.65 var(--font-ui);
   letter-spacing: 0.35px;
   color: #d4cdd0;
 }
@@ -1232,8 +1275,7 @@ button:active {
 }
 .speed-control {
   font:
-    16px Georgia,
-    serif;
+    16px var(--font-ui);
   padding: 0 20px;
   gap: 5px;
   background: #1b303c88;
@@ -1258,8 +1300,7 @@ button:active {
 }
 .track-subtitle {
   font:
-    13px Georgia,
-    serif;
+    13px var(--font-ui);
 }
 .sound-art {
   width: 78px;
@@ -1290,8 +1331,7 @@ button:active {
 }
 .timer-value {
   font:
-    18px Georgia,
-    serif;
+    18px var(--font-ui);
 }
 .timer-control {
   min-width: 135px;
@@ -1389,8 +1429,7 @@ button:active {
   }
   .speed-control {
     font:
-      13px Georgia,
-      serif;
+      13px var(--font-ui);
     padding: 0 15px;
   }
   .speed-control select {
@@ -1415,8 +1454,7 @@ button:active {
   }
   .track-subtitle {
     font:
-      10px Georgia,
-      serif;
+      10px var(--font-ui);
   }
   .play-section {
     padding: 0;
@@ -1435,8 +1473,7 @@ button:active {
   }
   .timer-value {
     font:
-      13px Georgia,
-      serif;
+      13px var(--font-ui);
   }
   .timer-control {
     min-width: auto;
@@ -1539,8 +1576,7 @@ button:active {
   border-radius: 24px;
   padding: 0 18px;
   font:
-    16px Georgia,
-    serif;
+    16px var(--font-ui);
 }
 @media (max-width: 700px) {
   .count-toggle {
@@ -1745,8 +1781,7 @@ button:active {
   background: transparent;
   color: #e5e3dd;
   font:
-    13px/1.2 Georgia,
-    serif;
+    13px/1.2 var(--font-ui);
 }
 .minimal-bar button:hover {
   background: #ffffff0c;
@@ -1779,9 +1814,7 @@ button:active {
   pointer-events: none;
 }
 .desktop-immersion .minimal-count > span {
-  font:
-    italic 22px/1 Georgia,
-    serif;
+  font: normal 22px/1 var(--font-ui);
   color: #d9d4e0a6;
 }
 .minimal-volume {
@@ -1857,3 +1890,14 @@ button:active {
   opacity: 0.4;
   cursor: default;
 }
+
+/* One readable UI family; the brand keeps its original wordmark. */
+.app button,.app input,.app select {font-family:var(--font-ui);font-style:normal;letter-spacing:normal;}
+.desktop-immersion .minimal-bar button {font-size:14px;font-weight:500;line-height:1.4;}
+.modal {font-family:var(--font-ui);font-size:14px;font-weight:400;line-height:1.6;letter-spacing:normal;}
+.modal button,.modal select {font-size:14px;font-weight:500;line-height:1.4;}
+.modal h2,.modal-compact h2 {font-family:var(--font-ui);font-size:20px;font-weight:500;line-height:1.4;letter-spacing:normal;}
+.modal p,.modal .sound-card-text,.modal .modal-note {font-size:14px;font-weight:400;line-height:1.6;letter-spacing:normal;}
+.modal strong {font-weight:500;}
+.desktop-immersion .minimal-count>span {font-family:var(--font-ui);font-size:20px;font-style:normal;font-weight:400;line-height:1.4;letter-spacing:normal;}
+.minimal-timer,.timer-value,.minimal-count {font-variant-numeric:tabular-nums;}
