@@ -2,14 +2,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AudioEngine } from "../audio/AudioEngine";
 import type { DurationMinutes, SoundId } from "../types";
 import { readPreference, writePreference } from "./preferences";
+const audioError =
+  "Chưa thể phát âm thanh. Hãy thử lại hoặc chọn âm thanh khác.";
 export function useRelaxationSession() {
   const [sound, setSound] = useState<SoundId>(() => {
     const saved = readPreference("sound", "rain");
     return saved === "stream" || saved === "brown" ? saved : "rain";
   });
   const [volume, setVolume] = useState(() => {
-    const n = Number(readPreference("volume", "0.45"));
-    return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0.45;
+    const value = Number(readPreference("volume", "0.45"));
+    return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0.45;
   });
   const [playing, setPlaying] = useState(false),
     [starting, setStarting] = useState(false);
@@ -18,9 +20,12 @@ export function useRelaxationSession() {
   const [ended, setEnded] = useState(false),
     [error, setError] = useState("");
   const audio = useRef<AudioEngine | null>(null),
-    deadline = useRef<number | null>(null);
-  const pending = useRef(false),
+    deadline = useRef<number | null>(null),
+    pending = useRef(false),
     mounted = useRef(true);
+  // Async preparation must use the latest controls, not the click's old render.
+  const latest = useRef({ sound, volume, duration, remaining, ended });
+  latest.current = { sound, volume, duration, remaining, ended };
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -36,8 +41,23 @@ export function useRelaxationSession() {
     writePreference("volume", String(volume));
   }, [volume]);
   useEffect(() => {
-    if (playing) audio.current?.select(sound);
-  }, [sound]);
+    if (!playing) return;
+    const engine = audio.current;
+    if (!engine) return;
+    let cancelled = false;
+    void engine?.select(sound).catch(() => {
+      if (cancelled || !mounted.current || audio.current !== engine) return;
+      if (deadline.current !== null)
+        setRemaining(Math.max(0, deadline.current - Date.now()));
+      deadline.current = null;
+      engine.pause();
+      setPlaying(false);
+      setError(audioError);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sound, playing]);
   useEffect(() => {
     if (playing)
       audio.current?.envelope(
@@ -82,23 +102,33 @@ export function useRelaxationSession() {
     setError("");
     try {
       const engine = (audio.current ??= new AudioEngine());
-      await engine.start(sound);
+      let requested = latest.current.sound;
+      await engine.start(requested);
+      while (
+        mounted.current &&
+        audio.current === engine &&
+        latest.current.sound !== requested
+      ) {
+        requested = latest.current.sound;
+        await engine.select(requested);
+      }
       if (!mounted.current || audio.current !== engine) return;
-      const left = ended
-        ? duration === 0
-          ? null
-          : duration * 60000
-        : remaining;
+      const config = latest.current,
+        left = config.ended
+          ? config.duration === 0
+            ? null
+            : config.duration * 60000
+          : config.remaining;
       setRemaining(left);
       deadline.current = left === null ? null : Date.now() + left;
-      engine.envelope(volume, left);
+      engine.envelope(config.volume, left);
       setEnded(false);
       setPlaying(true);
     } catch {
-      if (mounted.current)
-        setError(
-          "Chưa thể phát âm thanh. Hãy thử lại hoặc chọn âm thanh khác.",
-        );
+      if (mounted.current) {
+        audio.current?.pause();
+        setError(audioError);
+      }
     } finally {
       pending.current = false;
       if (mounted.current) setStarting(false);

@@ -1,104 +1,83 @@
 import type { SoundId } from "../types";
-type Voice = {
-  source: AudioBufferSourceNode;
-  filter: BiquadFilterNode;
-  gain: GainNode;
-};
-/** Procedural audio, separate from React and the scene. Times use AudioContext. */
+import { SoundBank } from "./SoundBank";
+import { createVoice, disconnectVoice, fadeVoice, type Voice } from "./voice";
+/** Owns playback only. Sound generation lives in SoundBank and a Blob worker. */
 export class AudioEngine {
   private context?: AudioContext;
   private master?: GainNode;
+  private bank?: SoundBank;
   private voice?: Voice;
-  private buffers = new Map<SoundId, AudioBuffer>();
   private retired = new Set<Voice>();
   private suspendTimer?: ReturnType<typeof setTimeout>;
+  private request = 0;
+  private wantedPlaying = false;
+  private disposed = false;
+  get diagnostics() {
+    return {
+      context: this.context?.state ?? "closed",
+      audioTime: this.context?.currentTime ?? 0,
+      wantedPlaying: this.wantedPlaying,
+      activeSound: this.voice?.sound ?? null,
+      voices: (this.voice ? 1 : 0) + this.retired.size,
+      retired: this.retired.size,
+      bank: this.bank?.stats ?? null,
+      disposed: this.disposed,
+    };
+  }
   async start(sound: SoundId) {
+    if (this.disposed) throw new Error("Audio engine disposed");
     clearTimeout(this.suspendTimer);
     if (!this.context) {
       this.context = new AudioContext();
       this.master = this.context.createGain();
       this.master.gain.value = 0;
       this.master.connect(this.context.destination);
+      this.bank = new SoundBank(this.context);
     }
+    this.wantedPlaying = true;
+    // Resume synchronously from the trusted click, before worker preparation.
     await this.context.resume();
-    this.select(sound);
+    if (this.disposed || !this.wantedPlaying) return;
+    await this.select(sound);
   }
-  select(sound: SoundId) {
+  async select(sound: SoundId): Promise<void> {
     const context = this.context,
-      master = this.master;
-    if (!context || !master) return;
-    let buffer = this.buffers.get(sound);
-    if (!buffer) {
-      buffer = context.createBuffer(
-        2,
-        context.sampleRate * 8,
-        context.sampleRate,
-      );
-      for (let channel = 0; channel < 2; channel++) {
-        const data = buffer.getChannelData(channel);
-        let brown = 0;
-        for (let i = 0; i < data.length; i++) {
-          const white = Math.random() * 2 - 1;
-          brown = (brown + 0.025 * white) / 1.025;
-          data[i] =
-            sound === "brown"
-              ? brown * 3.8
-              : sound === "stream"
-                ? white * 0.28 +
-                  brown *
-                    (1 +
-                      0.35 *
-                        Math.sin((i / context.sampleRate) * Math.PI * 2 * 0.5))
-                : white * 0.38;
-        }
-        const overlap = Math.floor(context.sampleRate * 0.15);
-        for (let i = 0; i < overlap; i++) {
-          const mix = i / overlap;
-          data[data.length - overlap + i] =
-            data[data.length - overlap + i] * (1 - mix) + data[i] * mix;
-        }
-      }
-      this.buffers.set(sound, buffer);
+      master = this.master,
+      bank = this.bank;
+    if (!context || !master || !bank || !this.wantedPlaying || this.disposed)
+      return;
+    const request = ++this.request;
+    if (this.voice?.sound === sound) return;
+    let buffer: AudioBuffer;
+    try {
+      buffer = await bank.get(sound);
+    } catch (error) {
+      if (this.disposed || !this.wantedPlaying || request !== this.request)
+        return;
+      throw error;
     }
-    const source = context.createBufferSource(),
-      filter = context.createBiquadFilter(),
-      gain = context.createGain();
-    source.buffer = buffer;
-    source.loop = true;
-    source.loopStart = 0.15;
-    filter.type = "lowpass";
-    filter.frequency.value =
-      sound === "brown" ? 500 : sound === "stream" ? 1900 : 3600;
-    filter.Q.value = 0.25;
-    gain.gain.value = 0;
-    source.connect(filter).connect(gain).connect(master);
-    const now = context.currentTime;
-    gain.gain.linearRampToValueAtTime(1, now + 0.65);
-    source.start(0, 0.15);
-    const previous = this.voice;
+    if (this.disposed || !this.wantedPlaying || request !== this.request)
+      return;
+    const now = context.currentTime,
+      previous = this.voice;
+    this.voice = createVoice(context, buffer, sound, master, now);
     if (previous) {
-      previous.gain.gain.cancelAndHoldAtTime(now);
-      previous.gain.gain.linearRampToValueAtTime(0, now + 0.65);
-      previous.source.stop(now + 0.7);
+      fadeVoice(previous, now, "out");
+      previous.source.stop(now + 0.82);
       this.retired.add(previous);
       previous.source.onended = () => {
-        this.disconnect(previous);
+        disconnectVoice(previous);
         this.retired.delete(previous);
       };
     }
-    this.voice = {
-      source,
-      filter,
-      gain,
-    };
   }
   envelope(volume: number, remaining: number | null) {
     if (!this.context || !this.master) return;
     const gain = this.master.gain,
-      now = this.context.currentTime;
+      now = this.context.currentTime,
+      fade =
+        remaining === null ? 1 : Math.min(1, Math.max(0, remaining / 15000));
     gain.cancelAndHoldAtTime(now);
-    const fade =
-      remaining === null ? 1 : Math.min(1, Math.max(0, remaining / 15000));
     gain.linearRampToValueAtTime(volume * fade, now + 0.08);
     if (remaining !== null && remaining > 80) {
       const end = now + remaining / 1000;
@@ -107,29 +86,42 @@ export class AudioEngine {
     }
   }
   pause() {
+    this.wantedPlaying = false;
+    this.request++;
+    clearTimeout(this.suspendTimer);
     if (!this.context || !this.master) return;
     const now = this.context.currentTime;
     this.master.gain.cancelAndHoldAtTime(now);
     this.master.gain.linearRampToValueAtTime(0, now + 0.12);
     this.suspendTimer = setTimeout(() => {
-      void this.context?.suspend();
+      if (this.wantedPlaying || this.disposed || !this.context) return;
+      this.retired.forEach((voice) => disconnectVoice(voice));
+      this.retired.clear();
+      if (this.voice) {
+        const gain = this.voice.gain.gain;
+        gain.cancelAndHoldAtTime(this.context.currentTime);
+        gain.setValueAtTime(1, this.context.currentTime);
+        this.voice.at = this.context.currentTime - 1;
+        this.voice.direction = "in";
+      }
+      void this.context.suspend();
     }, 160);
   }
-  private disconnect(voice: Voice) {
-    voice.source.onended = null;
-    voice.source.disconnect();
-    voice.filter.disconnect();
-    voice.gain.disconnect();
-  }
   dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.wantedPlaying = false;
+    this.request++;
     clearTimeout(this.suspendTimer);
-    this.retired.forEach((voice) => this.disconnect(voice));
+    this.bank?.dispose();
+    this.bank = undefined;
+    this.retired.forEach((voice) => disconnectVoice(voice));
     this.retired.clear();
-    if (this.voice) this.disconnect(this.voice);
+    if (this.voice) disconnectVoice(this.voice);
+    this.voice = undefined;
+    this.master?.disconnect();
     void this.context?.close();
     this.context = undefined;
     this.master = undefined;
-    this.voice = undefined;
-    this.buffers.clear();
   }
 }

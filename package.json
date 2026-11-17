@@ -1,6 +1,6 @@
 {
   "name": "em",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,8 @@
     "test": "playwright test",
     "demo": "node scripts/portable.mjs",
     "verify:offline": "node scripts/check-offline.mjs",
-    "verify:source": "node scripts/check-source-roundtrip.mjs"
+    "verify:source": "node scripts/check-source-roundtrip.mjs",
+    "verify:soak": "node scripts/soak-audio.mjs"
   },
   "dependencies": {
     "react": "19.3.1",

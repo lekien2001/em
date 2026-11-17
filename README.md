@@ -23,6 +23,8 @@ npm run verify:offline
 npm run verify:source
 ```
 
+Giao diện dùng Be Vietnam Pro nhúng sẵn, hỗ trợ tiếng Việt khi offline. Ba âm thanh tổng hợp được chuẩn bị trong Worker, chuyển bài bằng fade 800 ms; không cần tải file âm thanh. Kiến trúc, giấy phép và kiểm chứng phiên bản 0.4.0 ở [docs/font-audio.md](docs/font-audio.md). Có thể chạy `npm run verify:soak` khi preview đang mở để kiểm tra riêng một phiên 10 phút bằng đồng hồ thật.
+
 Playwright tự khởi động build/preview khi chưa có preview đang chạy. Trên môi trường có Chromium ở `/usr/bin/chromium`, kiểm thử dùng trình duyệt đó; nơi khác chạy `npx playwright install chromium` trước. Có thể chỉ định trình duyệt bằng `CHROMIUM_PATH`. Các kiểm thử WebGL dùng SwiftShader để chạy ổn định trong cloud, không xác nhận FPS GPU máy thật.
 
 `npm run demo` tạo **`artifacts/em-final.html`** nhúng toàn bộ mã, ảnh, GLB và âm thanh tổng hợp, mở độc lập khi không có mạng. Script kiểm tra offline và phục hồi nguồn cần Chromium hệ thống như môi trường cloud.
