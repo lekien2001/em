@@ -1,9 +1,13 @@
-import type { Dispatch, ReactNode, SetStateAction } from "react";
+import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import type { Sound } from "../audio/catalog";
 import type { RelaxationSession } from "../session/useRelaxationSession";
 import type { SheepSpeed } from "../types";
 import type { useImmersiveControls } from "./useImmersiveControls";
 export type Panel = "library" | "volume" | "timer" | "options" | "about" | "face" | null;
+export type DesktopPanel = "library" | "volume" | "timer" | "options";
+export function isDesktopPanel(panel: Panel): panel is DesktopPanel {
+  return panel === "library" || panel === "volume" || panel === "timer" || panel === "options";
+}
 /** Shared UI data; each component receives only its required fields via Pick. */
 export type ControlsProps = {
   session: RelaxationSession;
@@ -22,6 +26,7 @@ export type ControlsProps = {
     inert: boolean;
   };
   sceneOptions: ReactNode;
+  barRef: RefObject<HTMLDivElement | null>;
   setReset: Dispatch<SetStateAction<number>>;
   setShowCount: Dispatch<SetStateAction<boolean>>;
   setSpeed: Dispatch<SetStateAction<SheepSpeed>>;

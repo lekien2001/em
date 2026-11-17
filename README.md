@@ -27,6 +27,8 @@ Giao diện dùng Be Vietnam Pro nhúng sẵn, hỗ trợ tiếng Việt khi off
 
 Từ phiên bản 0.5.0, mở **⋯ → Mặt cừu của bạn** để chọn ảnh, căn mặt thủ công và gắn lên cả ba cừu. Ảnh chỉ được xử lý trong trình duyệt và không giữ lại sau khi tải lại trang. Cách sử dụng, cấu trúc mã, thông số model và giới hạn kiểm thử ở [docs/personal-face.md](docs/personal-face.md).
 
+Phiên bản 0.6.0 thiết kế lại settings desktop theo từng hàng, dùng radio Chậm/Vừa và công tắc trạng thái. Bảng nhỏ nằm gần thanh phát, vẫn cho Play/Pause; mute khôi phục đúng mức âm lượng cũ, kể cả sau reload. Chi tiết hành vi, cấu trúc và kiểm tra ở [docs/desktop-controls.md](docs/desktop-controls.md).
+
 Playwright tự khởi động build/preview khi chưa có preview đang chạy. Trên môi trường có Chromium ở `/usr/bin/chromium`, kiểm thử dùng trình duyệt đó; nơi khác chạy `npx playwright install chromium` trước. Có thể chỉ định trình duyệt bằng `CHROMIUM_PATH`. Các kiểm thử WebGL dùng SwiftShader để chạy ổn định trong cloud, không xác nhận FPS GPU máy thật.
 
 `npm run demo` tạo **`artifacts/em-final.html`** nhúng toàn bộ mã, ảnh, GLB và âm thanh tổng hợp, mở độc lập khi không có mạng. Script kiểm tra offline và phục hồi nguồn cần Chromium hệ thống như môi trường cloud.

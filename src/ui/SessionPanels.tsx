@@ -5,28 +5,22 @@ import {
   Check,
   Headphones,
   Leaf,
-  Moon,
   Timer,
-  Volume,
-  VolumeOff,
 } from "../ui/icons";
 import type { ControlsProps } from "./types";
+/** Touch dialogs. Desktop uses nonmodal panels beside the playbar. */
 export function SessionPanels({
   closePanel,
   immersion,
   panel,
-  sceneOptions,
   session,
-  setSleep,
   toggleSession,
 }: Pick<
   ControlsProps,
   | "closePanel"
   | "immersion"
   | "panel"
-  | "sceneOptions"
   | "session"
-  | "setSleep"
   | "toggleSession"
 >) {
   return (
@@ -123,53 +117,6 @@ export function SessionPanels({
               ? "Âm thanh giảm dần trong 15 giây cuối."
               : "Thay đổi hẹn giờ sẽ bắt đầu một khoảng thời gian mới."}
           </p>
-        </Dialog>
-      )}
-      {panel === "volume" && immersion.desktop && (
-        <Dialog
-          title={"Âm lượng"}
-          close={closePanel}
-          compact={immersion.desktop}
-        >
-          <div className={"minimal-volume"}>
-            <button
-              className={"icon-button"}
-              aria-label={session.volume ? "Tắt tiếng" : "Bật tiếng"}
-              onClick={() => session.setVolume(session.volume ? 0 : 0.45)}
-            >
-              {session.volume ? <Volume size={20} /> : <VolumeOff size={20} />}
-            </button>
-            <input
-              type={"range"}
-              aria-label={"Âm lượng"}
-              min={"0"}
-              max={"1"}
-              step={"0.01"}
-              value={session.volume}
-              onChange={(x) => session.setVolume(Number(x.target.value))}
-            />
-          </div>
-        </Dialog>
-      )}
-      {panel === "options" && immersion.desktop && (
-        <Dialog
-          title={"Tùy chọn"}
-          close={closePanel}
-          compact={immersion.desktop}
-        >
-          <div className={"minimal-options"}>
-            {sceneOptions}
-            <button
-              className={"minimal-dim"}
-              onClick={() => {
-                closePanel();
-                setSleep(true);
-              }}
-            >
-              <Moon size={18} />
-              {"Làm tối cảnh"}
-            </button>
-          </div>
         </Dialog>
       )}
       {panel === "about" && (

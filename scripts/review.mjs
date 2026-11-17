@@ -9,7 +9,7 @@ try{const page=await browser.newPage({viewport:{width:1366,height:768}});page.on
  await sample('main');
  async function seek(target,name){const before=Number(await host.getAttribute('data-scene-time'));await page.evaluate(()=>{if(document.querySelector('main').dataset.playing!=='true')document.querySelector('[data-pause]').click();});await expect(page.locator('main')).toHaveAttribute('data-playing','true');await page.clock.runFor(20);await page.clock.fastForward(Math.max(0,Math.round((target-before)*1000)-20));await page.evaluate(()=>document.querySelector('[data-pause]').click());await expect(page.locator('main')).toHaveAttribute('data-playing','false');await page.clock.runFor(20);await sample(name);}
  await seek(7.6,'jump');await seek(13.7,'approach-flat-barn');await seek(16.3,'inside-flat-barn');await seek(17.8,'closed-before');await seek(18.1,'closed-after');
- await page.getByRole('button',{name:'Tùy chọn',exact:true}).click();await page.getByRole('button',{name:'Giảm chuyển động',exact:true}).click();await page.keyboard.press('Escape');
+ await page.getByRole('button',{name:'Tùy chọn',exact:true}).click();await page.getByRole('switch',{name:'Giảm chuyển động',exact:true}).click();await page.keyboard.press('Escape');
  await page.locator('canvas').focus();for(let i=0;i<8;i++){if(i)await page.locator('canvas').evaluate((c,n)=>{for(let k=0;k<n;k++)c.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}));},i%2?7:6);await sample('orbit-'+i);}
  await writeFile(dir+'/report.json',JSON.stringify({errors,samples},null,2));console.log('ERRORS',errors);expect(errors).toEqual([]);
 }finally{await browser.close();}

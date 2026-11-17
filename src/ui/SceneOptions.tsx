@@ -57,7 +57,7 @@ export function SceneOptions({
         <button
           className={"small-option count-toggle"}
           onClick={() => setShowCount((x) => !x)}
-          aria-pressed={!showCount}
+          aria-pressed={showCount}
           aria-label={showCount ? "Ẩn số đếm" : "Hiện số đếm"}
           title={showCount ? "Ẩn số đếm" : "Hiện số đếm"}
         >

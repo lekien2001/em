@@ -17,6 +17,7 @@ export function Toolbar({
   setPanel,
   timerLabel,
   toggleSession,
+  barRef,
 }: Pick<
   ControlsProps,
   | "currentSound"
@@ -27,9 +28,12 @@ export function Toolbar({
   | "setPanel"
   | "timerLabel"
   | "toggleSession"
+  | "barRef"
 >) {
+  const togglePanel = (next: "library" | "volume" | "timer" | "options") => setPanel(current => current === next ? null : next);
   return (
     <div
+      ref={barRef}
       {...immersiveProps}
       className={"minimal-bar"}
       role={"toolbar"}
@@ -49,9 +53,10 @@ export function Toolbar({
                 ? "Phát phiên thư giãn"
                 : "Bắt đầu thư giãn"
         }
-        title={session.playing ? "Tạm dừng" : "Phát"}
+        title={session.starting ? "Đang mở âm thanh" : session.playing ? "Tạm dừng" : "Phát"}
+        aria-busy={session.starting}
       >
-        {session.playing ? (
+        {session.starting ? <span className="play-loading" aria-hidden="true" /> : session.playing ? (
           <Pause size={20} fill={"currentColor"} />
         ) : (
           <Play size={20} fill={"currentColor"} />
@@ -59,8 +64,10 @@ export function Toolbar({
       </button>
       <button
         className={"minimal-sound"}
-        onClick={() => setPanel("library")}
-        aria-label={`Chọn âm thanh. Đang chọn: ${currentSound.name}`}
+        onClick={() => togglePanel("library")}
+        data-panel-trigger="library"
+        aria-controls={panel === "library" ? "desktop-panel-library" : undefined}
+        aria-label={`Chọn âm thanh. Đang chọn: ${currentSound.label}`}
         aria-haspopup={"dialog"}
         aria-expanded={panel === "library"}
       >
@@ -68,7 +75,9 @@ export function Toolbar({
         <ChevronDown size={13} />
       </button>
       <button
-        onClick={() => setPanel("volume")}
+        onClick={() => togglePanel("volume")}
+        data-panel-trigger="volume"
+        aria-controls={panel === "volume" ? "desktop-panel-volume" : undefined}
         aria-label={"Âm lượng"}
         title={"Âm lượng"}
         aria-haspopup={"dialog"}
@@ -78,7 +87,9 @@ export function Toolbar({
       </button>
       <button
         className={"minimal-timer"}
-        onClick={() => setPanel("timer")}
+        onClick={() => togglePanel("timer")}
+        data-panel-trigger="timer"
+        aria-controls={panel === "timer" ? "desktop-panel-timer" : undefined}
         aria-label={`Hẹn giờ: ${session.duration ? session.duration + " phút" : "không giới hạn"}`}
         aria-haspopup={"dialog"}
         aria-expanded={panel === "timer"}
@@ -87,13 +98,13 @@ export function Toolbar({
         <span>
           {session.remaining === null
             ? "∞"
-            : hasStarted || session.playing || session.ended
-              ? timerLabel
-              : `${session.duration}′`}
+            : timerLabel}
         </span>
       </button>
       <button
-        onClick={() => setPanel("options")}
+        onClick={() => togglePanel("options")}
+        data-panel-trigger="options"
+        aria-controls={panel === "options" ? "desktop-panel-options" : undefined}
         aria-label={"Tùy chọn"}
         title={"Tùy chọn"}
         aria-haspopup={"dialog"}

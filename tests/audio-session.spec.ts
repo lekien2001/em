@@ -32,6 +32,9 @@ test("latest sound, volume and duration chosen during preparation are used on su
   await expect(
     page.getByRole("button", { name: "Đang mở âm thanh", exact: true }),
   ).toBeVisible();
+  await expect(page.locator('.play-loading')).toBeVisible();
+  await expect(page.getByRole('button',{name:'Đang mở âm thanh',exact:true})).toHaveAttribute('aria-busy','true');
+  await expect(page.getByRole('button',{name:'Đang mở âm thanh',exact:true})).toHaveAttribute('title','Đang mở âm thanh');
   await page.getByRole("button", { name: /^Chọn âm thanh/ }).click();
   await page.getByRole("button", { name: /^Tiếng suối/ }).click();
   await page.getByRole("button", { name: /^Hẹn giờ:/ }).click();
@@ -43,6 +46,7 @@ test("latest sound, volume and duration chosen during preparation are used on su
   await expect(page.locator("main")).toHaveAttribute("data-playing", "false");
   await page.evaluate(()=>(window as any).__releaseAudioPreparation());
   await expect(page.locator("main")).toHaveAttribute("data-playing", "true");
+  await expect(page.locator('.play-loading')).toHaveCount(0);
   expect(
     Number(await page.locator("main").getAttribute("data-remaining")),
   ).toBeLessThanOrEqual(900000);

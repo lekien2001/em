@@ -13,6 +13,11 @@ export function useRelaxationSession() {
     const value = Number(readPreference("volume", "0.45"));
     return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0.45;
   });
+  const lastVolume = useRef(0);
+  if (lastVolume.current === 0) {
+    const saved = Number(readPreference("last-volume", "0.45"));
+    lastVolume.current = volume > 0 ? volume : Number.isFinite(saved) && saved > 0 && saved <= 1 ? saved : 0.45;
+  }
   const [playing, setPlaying] = useState(false),
     [starting, setStarting] = useState(false);
   const [duration, setDuration] = useState<DurationMinutes>(30),
@@ -39,7 +44,17 @@ export function useRelaxationSession() {
   }, [sound]);
   useEffect(() => {
     writePreference("volume", String(volume));
+    if (volume > 0) {
+      lastVolume.current = volume;
+    }
+    writePreference("last-volume", String(lastVolume.current));
   }, [volume]);
+  function toggleMute() {
+    setVolume(current => {
+      if (current > 0) { lastVolume.current = current; return 0; }
+      return lastVolume.current;
+    });
+  }
   useEffect(() => {
     if (!playing) return;
     const engine = audio.current;
@@ -146,6 +161,7 @@ export function useRelaxationSession() {
     setSound,
     volume,
     setVolume,
+    toggleMute,
     playing,
     starting,
     toggle,

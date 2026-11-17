@@ -11,7 +11,7 @@ for(const [width,height]of [[1366,768],[1440,900],[1920,1080]])test(`desktop ${w
 test('desktop UI hides after play and reveals on mouse/keyboard; dialogs hold it open',async({page})=>{
  await fallback(page);await page.clock.install();await page.goto('/');await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));await play(page).click();await expect(page.locator('main')).toHaveAttribute('data-playing','true');await page.clock.runFor(300);
  await expect(page.locator('main')).toHaveAttribute('data-playing','true');await page.mouse.move(700,300);await page.clock.runFor(20);await expect(page.getByRole('button',{name:'Tùy chọn',exact:true})).toBeVisible();
- await page.getByRole('button',{name:'Tùy chọn',exact:true}).click();await page.clock.fastForward(5000);await expect(page.getByRole('button',{name:'Hiện số đếm',exact:true})).toBeVisible();await page.keyboard.press('Escape');
+ await page.getByRole('button',{name:'Tùy chọn',exact:true}).click();await page.clock.fastForward(5000);await expect(page.getByRole('switch',{name:'Hiện số đếm',exact:true})).toBeVisible();await page.keyboard.press('Escape');
  await page.mouse.move(720,310);await page.clock.runFor(3010);await expect(page.locator('main')).toHaveClass(/is-immersed/);await page.clock.runFor(300);await expect(page.getByRole('button',{name:'Tùy chọn',exact:true})).not.toBeVisible();await page.keyboard.press('Tab');await page.clock.runFor(20);await expect(page.getByRole('button',{name:'Tạm dừng phiên thư giãn',exact:true})).toBeFocused();
 });
 
@@ -40,6 +40,6 @@ test('real WebGL: flattened barn, motion, pause, reduced mode and reset camera p
  await page.locator('canvas').focus();await page.keyboard.press('ArrowLeft');await page.clock.runFor(20);await page.clock.fastForward(5000);
  expect(await page.evaluate(()=>{const q=globalThis.__emQA;return {phase:q.phase,time:q.activeSeconds,door:q.world.doorState(),body:q.world.actors[0].root.getObjectByName('Body').position.toArray(),head:q.world.actors[0].root.getObjectByName('Head').quaternion.toArray()};})).toEqual(frozen);
  await expect(host).toHaveAttribute('data-dynamic-shadow-updated','false');await expect(host).toHaveAttribute('data-static-shadow-bakes','1');
- await page.getByRole('button',{name:'Tùy chọn',exact:true}).click();await page.getByRole('button',{name:'Giảm chuyển động',exact:true}).click();await page.keyboard.press('Escape');await page.locator('canvas').focus();await page.keyboard.press('Home');await page.clock.runFor(20);await expect(host).toHaveAttribute('data-camera-position','6.000,5.000,20.500');
+ await page.getByRole('button',{name:'Tùy chọn',exact:true}).click();await page.getByRole('switch',{name:'Giảm chuyển động',exact:true}).click();await page.keyboard.press('Escape');await page.locator('canvas').focus();await page.keyboard.press('Home');await page.clock.runFor(20);await expect(host).toHaveAttribute('data-camera-position','6.000,5.000,20.500');
  await page.getByRole('button',{name:'Phát phiên thư giãn',exact:true}).click();await page.clock.fastForward(1200);expect(await page.evaluate(()=>globalThis.__emQA.controllers.every(c=>Math.abs(c.diagnostics.headYaw)<1e-9&&Math.abs(c.diagnostics.earL)<1e-9))).toBe(true);await expect(page.locator('main')).toHaveAttribute('data-playing','true');expect(errors).toEqual([]);expect(bad).toEqual([]);
 });

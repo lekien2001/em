@@ -12,8 +12,11 @@ import { Panel } from "../ui/types";
 import { useImmersiveControls } from "../ui/useImmersiveControls";
 import { FaceEditor } from "../face/FaceEditor";
 import { usePersonalFace } from "../face/usePersonalFace";
+import { DesktopPanels } from "../ui/DesktopPanels";
+import { DesktopSettings } from "../ui/DesktopSettings";
 export function App() {
   const personalFace = usePersonalFace();
+  const barRef = React.useRef<HTMLDivElement>(null);
   let session = useRelaxationSession(),
     [count, setCount] = React.useState(0),
     [showCount, setShowCount] = React.useState(
@@ -88,6 +91,24 @@ export function App() {
       speed={speed}
     />
   );
+  const desktopSettings = (
+    <DesktopSettings
+      speed={speed}
+      setSpeed={setSpeed}
+      reduced={reduced}
+      setReduced={setReduced}
+      showCount={showCount}
+      setShowCount={setShowCount}
+      sceneReady={sceneReady}
+      faceApplied={!!personalFace.photo}
+      reset={() => { closePanel(); setReset(x => x + 1); }}
+      dim={() => { closePanel(); setSleep(true); }}
+      openFace={() => {
+        barRef.current?.querySelector<HTMLElement>('[data-panel-trigger="options"]')?.focus();
+        setPanel("face");
+      }}
+    />
+  );
   return (
     <main
       className={`app ${sleep ? "is-sleeping" : ""} ${session.ended ? "has-ended" : ""} ${immersion.desktop ? "desktop-immersion" : ""} ${immersion.hidden ? "is-immersed" : ""} ${immersion.concealed ? "ui-concealed" : ""} ${reduced ? "reduce-motion" : ""}`}
@@ -160,6 +181,7 @@ export function App() {
             </div>
           )}
           <Toolbar
+            barRef={barRef}
             currentSound={currentSound}
             hasStarted={hasStarted}
             immersiveProps={immersiveProps}
@@ -204,15 +226,15 @@ export function App() {
       {personalFace.error && <div className="audio-error" role="alert">{personalFace.error}<button onClick={personalFace.restore}>Khôi phục</button></div>}
       {panel === "face" && <FaceEditor face={personalFace} close={closePanel} sceneReady={sceneReady} />}
 
-      <SessionPanels
+      {immersion.desktop ? (
+        <DesktopPanels panel={panel} barRef={barRef} closePanel={closePanel} session={session} timerLabel={timerLabel} settings={desktopSettings} />
+      ) : <SessionPanels
         closePanel={closePanel}
         immersion={immersion}
         panel={panel}
-        sceneOptions={sceneOptions}
         session={session}
-        setSleep={setSleep}
         toggleSession={toggleSession}
-      />
+      />}
     </main>
   );
 }

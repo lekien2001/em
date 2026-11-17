@@ -193,7 +193,7 @@ export function TouchControls({
             <button
               className={"icon-button"}
               aria-label={session.volume ? "Tắt tiếng" : "Bật tiếng"}
-              onClick={() => session.setVolume(session.volume ? 0 : 0.45)}
+              onClick={session.toggleMute}
             >
               {session.volume ? <Volume size={20} /> : <VolumeOff size={20} />}
             </button>
