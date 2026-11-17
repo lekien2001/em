@@ -33,6 +33,7 @@ export class AudioEngine {
       wantedPlaying: this.wantedPlaying,
       activeSound: this.voices.size && active.length === 1 ? active[0] : null,
       activeSounds: this.voices.size ? active : [],
+      sessionGain: this.fadeGain?.gain.value ?? 0,
       levels: this.curve && this.context ? sampleMix(this.curve, this.context.currentTime) : [0, 0, 0],
       voices: this.voices.size,
       retired: 0,

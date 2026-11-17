@@ -147,6 +147,10 @@ export function useRelaxationSession() {
         pending.current = false;
         audio.current?.pause();
         setStarting(false);
+      } else if (timer.remaining !== null && timer.remaining <= timer.windowMs + 1000) {
+        // Keep the final envelope on the wall-clock deadline even if the audio
+        // device clock drifts. Native automation still runs while timers throttle.
+        envelope();
       }
       refresh();
     };

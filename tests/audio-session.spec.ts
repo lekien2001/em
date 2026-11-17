@@ -136,3 +136,11 @@ for (const minutes of [30, 60])
     await expect(page.locator("main")).toHaveAttribute("data-remaining", "0");
     await expect(page.locator("main")).toHaveAttribute("data-fade", "0.000");
   });
+
+
+test("final fade resynchronizes native audio when wall and audio clocks diverge", async ({page}) => {
+ await fallback(page);await page.clock.install({time:new Date("2026-01-01T00:00:00Z")});await page.clock.pauseAt(new Date("2026-01-01T00:01:00Z"));await page.goto("/lifecycle-qa.html");await page.evaluate(()=>(window as any).__emLifecycle.mountApp());await page.getByRole("button",{name:"Bắt đầu thư giãn",exact:true}).click();await expect(page.locator("main")).toHaveAttribute("data-playing","true");
+ await page.clock.setSystemTime(await page.evaluate(()=>Date.now()+1790000));await page.clock.runFor(250);
+ const state=await page.evaluate(()=>(window as any).__emLifecycle.status());expect(state.envelopes.at(-1).remaining).toBeLessThanOrEqual(10000);expect(state.audio.audioTime).toBeLessThan(30);
+ await expect.poll(async()=>(await page.evaluate(()=>(window as any).__emLifecycle.status())).audio.sessionGain).toBeLessThan(.7);expect(Number(await page.locator("main").getAttribute("data-fade"))).toBeLessThan(.7);await expect(page.locator("main")).toHaveAttribute("data-playing","true");
+});
