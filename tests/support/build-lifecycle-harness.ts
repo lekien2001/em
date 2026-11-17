@@ -12,6 +12,6 @@ export async function buildLifecycleHarness() {
   });
   await fs.writeFile(
     "dist/lifecycle-qa.html",
-    '<!doctype html><html lang="vi"><head><link rel="icon" href="data:,"><link rel="stylesheet" href="/style.css"></head><body><div id="root" class="app"></div><script src="/lifecycle-qa.js"></script></body></html>',
+    '<!doctype html><html lang="vi"><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="/style.css"></head><body><div id="root" class="app"></div><script src="/lifecycle-qa.js"></script></body></html>',
   );
 }

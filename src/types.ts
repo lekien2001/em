@@ -1,7 +1,9 @@
 export type SoundId = "rain" | "stream" | "brown";
 export type SheepSpeed = "slow" | "medium";
 export type Quality = "low" | "balanced" | "high";
-export type DurationMinutes = 0 | 15 | 30 | 60;
+/** Integer 1–720, or 0 for unlimited. Validate at configuration boundaries. */
+export type DurationMinutes = number;
+export type FadeSeconds = 15 | 60 | 180;
 export type FaceAppearance = { readonly canvas: HTMLCanvasElement; readonly revision: number };
 export type SceneProps = {
   playing: boolean;

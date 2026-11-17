@@ -9,7 +9,6 @@ import {
 } from "../ui/icons";
 import type { ControlsProps } from "./types";
 export function Toolbar({
-  currentSound,
   hasStarted,
   immersiveProps,
   panel,
@@ -67,11 +66,11 @@ export function Toolbar({
         onClick={() => togglePanel("library")}
         data-panel-trigger="library"
         aria-controls={panel === "library" ? "desktop-panel-library" : undefined}
-        aria-label={`Chọn âm thanh. Đang chọn: ${currentSound.label}`}
+        aria-label={`Chọn âm thanh. Đang chọn: ${session.soundLabel}`}
         aria-haspopup={"dialog"}
         aria-expanded={panel === "library"}
       >
-        <span>{currentSound.label}</span>
+        <span>{session.soundLabel}</span>
         <ChevronDown size={13} />
       </button>
       <button
@@ -104,11 +103,11 @@ export function Toolbar({
       <button
         onClick={() => togglePanel("options")}
         data-panel-trigger="options"
-        aria-controls={panel === "options" ? "desktop-panel-options" : undefined}
+        aria-controls={(panel === "options" || panel === "favorites") ? `desktop-panel-${panel}` : undefined}
         aria-label={"Tùy chọn"}
         title={"Tùy chọn"}
         aria-haspopup={"dialog"}
-        aria-expanded={panel === "options"}
+        aria-expanded={panel === "options" || panel === "favorites"}
       >
         <MoreHorizontal size={21} />
       </button>

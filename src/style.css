@@ -2087,3 +2087,46 @@ button.setting-row:hover:not(:disabled) { background: #ffffff08; }
   .desktop-popover, .play-loading { animation: none; }
   .setting-switch, .setting-switch > span, .speed-segments label > span { transition: none; }
 }
+
+/* Shared sound mixer, timer and local favorites. */
+.desktop-immersion .minimal-bar .minimal-timer { width: 120px; min-width: 120px; flex-shrink: 0; }
+.sleep-shade { transition: opacity 250ms linear; }
+.panel-tabs, .choice-segments { display: flex; gap: 4px; padding: 4px; border: 1px solid #a6b9c329; border-radius: 12px; background: #0e20296b; }
+.panel-tabs { margin-bottom: 12px; }
+.panel-tabs button, .choice-segments button { flex: 1; min-height: 40px; padding: 8px; border-radius: 8px; background: transparent; color: #b9c8d1; font: 500 13px/1.4 var(--font-ui); }
+.panel-tabs [aria-selected="true"], .choice-segments [aria-pressed="true"] { color: #1c2b36; background: #c6b3df; }
+.mix-row + .mix-row { border-top: 1px solid #b8c9ce18; padding-top: 8px; margin-top: 8px; }
+.mix-row .setting-row:disabled { opacity: 1; }
+.mix-level { display: flex; align-items: center; gap: 12px; padding: 0 8px; }
+.mix-level input { width: 100%; min-width: 0; min-height: 36px; accent-color: #c6b3df; }
+.mix-level output { width: 38px; flex-shrink: 0; text-align: right; font-size: 12px; color: #b9c8d1; font-variant-numeric: tabular-nums; }
+.mix-level input:disabled { opacity: .3; }
+.custom-timer, .favorites-panel form { margin: 16px 0 10px; }
+.custom-timer label, .favorites-panel label { display: block; margin: 0 0 8px; color: #c5d0d6; font: 400 13px/1.5 var(--font-ui); }
+.inline-fields { display: flex; align-items: center; gap: 8px; }
+.inline-fields input { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid #a6b9c344; border-radius: 10px; background: #0e20296b; color: #e7e8e7; font: 400 13px/1.5 var(--font-ui); }
+.inline-fields input::placeholder { color: #95a8b3; }
+.inline-fields button, .timer-extend button, .favorite-actions button, .delete-confirm button { min-height: 40px; padding: 9px 12px; border: 1px solid #a6b9c344; border-radius: 10px; background: #ffffff06; color: #e3d4f5; font: 400 12px/1.5 var(--font-ui); white-space: nowrap; }
+.inline-fields button { min-height: 44px; }
+.inline-fields button:hover, .timer-extend button:hover, .favorite-actions button:hover, .delete-confirm button:hover { background: #c6b3df20; }
+.timer-controls button:disabled, .favorites-panel button:disabled, .fade-options:disabled { opacity: .4; cursor: default; }
+.form-error, .storage-warning { margin: 10px 4px; color: #f0c0bd; font: 400 12px/1.6 var(--font-ui); }
+.timer-extend { display: flex; gap: 8px; margin: 12px 0; }
+.timer-extend button { flex: 1; }
+.fade-options { border: 0; border-top: 1px solid #b8c9ce18; padding: 12px 0 0; margin: 16px 0 0; min-width: 0; }
+.fade-options legend { padding: 0; font-size: 13px; color: #c5d0d6; }
+.panel-back { min-height: 40px; padding: 6px 4px; background: transparent; color: #d2bfe8; font: 400 13px/1.5 var(--font-ui); }
+.favorite-empty { padding: 16px 8px; color: #a9b9c2; font: 400 13px/1.7 var(--font-ui); }
+.favorite-list { display: grid; gap: 10px; margin-top: 16px; }
+.favorite-card { border: 1px solid #a6b9c329; border-radius: 14px; padding: 12px; }
+.favorite-card h3 { margin: 0 0 5px; color: #e7e8e7; font: 500 14px/1.5 var(--font-ui); overflow-wrap: anywhere; }
+.favorite-card p { margin: 0 0 10px; font: 400 12px/1.6 var(--font-ui); color: #a9b9c2; }
+.favorite-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.favorite-actions button { padding: 7px 9px; }
+.favorite-actions button:first-child { background: #c6b3df; color: #1c2b36; border-color: transparent; }
+.delete-confirm { margin-top: 12px; padding-top: 10px; border-top: 1px solid #b8c9ce18; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; }
+.delete-confirm > span { width: 100%; color: #f0c0bd; }
+.sound-picker, .timer-controls, .favorites-panel { font-family: var(--font-ui); font-size: 14px; line-height: 1.5; }
+@media (max-width: 700px) {
+  .scene-options .favorites-open span:last-child { display: none; }
+}

@@ -25,7 +25,8 @@ export function DesktopSettings({
   sceneReady,
   dim,
   openFace,
-  faceApplied
+  faceApplied,
+  openFavorites
 }: {
   speed: SheepSpeed;
   setSpeed: Dispatch<SetStateAction<SheepSpeed>>;
@@ -38,6 +39,7 @@ export function DesktopSettings({
   dim(): void;
   openFace(): void;
   faceApplied: boolean;
+  openFavorites(): void;
 }) {
   return <div className="desktop-settings">
     <section aria-label="Cảnh"><h3>Cảnh</h3>
@@ -55,6 +57,7 @@ export function DesktopSettings({
       <button className="setting-row setting-action" onClick={dim}><span>Làm tối cảnh</span><Moon size={17} /></button>
     </section>
     <section aria-label="Cá nhân hóa"><h3>Cá nhân hóa</h3>
+      <button className="setting-row setting-action" onClick={openFavorites}><span>Phiên yêu thích</span><span aria-hidden="true" className="setting-chevron">›</span></button>
       <button className="setting-row setting-face" aria-label="Mặt cừu của bạn" onClick={openFace}>
         <span><span>Mặt cừu của bạn</span><small>{faceApplied ? "Đã thêm ảnh" : "Chưa chọn ảnh"}</small></span><span aria-hidden="true" className="setting-chevron">›</span>
       </button>

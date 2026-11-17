@@ -23,9 +23,10 @@ let root: Root | undefined,
 let latestAudio: AudioEngine | undefined;
 const envelopes: { volume: number; remaining: number | null }[] = [];
 const originalEnvelope = AudioEngine.prototype.envelope;
-AudioEngine.prototype.envelope = function (volume, remaining) {
+AudioEngine.prototype.envelope = function (...args: Parameters<AudioEngine["envelope"]>) {
+  const [volume, remaining] = args;
   envelopes.push({ volume, remaining });
-  return originalEnvelope.call(this, volume, remaining);
+  return originalEnvelope.apply(this, args);
 };
 const originalStart = AudioEngine.prototype.start;
 AudioEngine.prototype.start = function (

@@ -118,7 +118,7 @@ export function TouchControls({
           <button
             className={"now-playing sleep-hide"}
             onClick={() => setPanel("library")}
-            aria-label={`Chọn âm thanh. Đang chọn: ${currentSound.name}`}
+            aria-label={`Chọn âm thanh. Đang chọn: ${session.soundLabel}`}
           >
             <span className={`sound-art ${currentSound.art}`}>
               <span className={"art-play"}>
@@ -126,7 +126,7 @@ export function TouchControls({
               </span>
             </span>
             <span className={"track-text"}>
-              <span className={"track-title"}>{currentSound.name}</span>
+              <span className={"track-title"}>{session.activeSounds.length > 1 ? "Bản phối" : currentSound.name}</span>
               <span className={"track-subtitle"}>
                 <span
                   className={`status-dot ${session.playing ? "live" : ""}`}

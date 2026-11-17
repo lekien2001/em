@@ -174,7 +174,7 @@ test("disposal during a pending worker request cancels it without late audio", a
   expect(result.bank).toBe(null);
 });
 
-test("serial rapid switches finish their native curves and retire every outgoing voice", async ({
+test("serial rapid switches finish native curves and retain at most three shared voices", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -193,9 +193,23 @@ test("serial rapid switches finish their native curves and retire every outgoing
   });
   await expect.poll(async () => (await stats(page)).retired).toBe(0);
   const result = await stats(page);
-  expect(result.voices).toBe(1);
+  expect(result.voices).toBe(3);
   expect(result.activeSound).toBe("brown");
   expect(result.bank.cached).toBe(3);
   expect(errors).toEqual([]);
   await page.evaluate(() => (window as any).__audioTest.dispose());
 });
+
+ test("three-layer native mix and normalized transition stay below -1 dBFS", async ({page}) => {
+  await page.goto("/audio-qa.html"); const result = await page.evaluate(()=>(window as any).__audioTest.nativeMix());
+  expect(result.peak).toBeLessThan(Math.pow(10,-1/20)); expect(result.samples[2]).toBeCloseTo(Math.sqrt(3)*.5,4);
+  await page.getByText("Start rain",{exact:true}).click();await expect.poll(async()=>(await stats(page)).activeSound).toBe("rain");
+  await page.evaluate(()=>(window as any).__audioTest.mix({rain:{enabled:true,level:1},stream:{enabled:true,level:1},brown:{enabled:true,level:1}}));
+  await page.waitForTimeout(200); const state=await stats(page);expect(state.activeSounds).toEqual(["rain","stream","brown"]);expect(state.voices).toBe(3);expect(Math.hypot(...state.levels)).toBeCloseTo(1,4);
+  await page.evaluate(()=>(window as any).__audioTest.dispose());
+ });
+
+ test("configured native fades use 15, 60 and 180 seconds and recover continuously", async({page})=>{
+  await page.goto("/audio-qa.html");for(const seconds of [15,60,180]){const values=await page.evaluate(seconds=>(window as any).__audioTest.configuredFade(seconds),seconds);expect(values[1]).toBeCloseTo(.8*3/seconds,4);expect(values[3]).toBeCloseTo(.8*2/seconds,4);expect(values[4]).toBeLessThan(.001);}
+  const recovered=await page.evaluate(()=>(window as any).__audioTest.configuredFade(15,true));expect(recovered[0]).toBeCloseTo(.8*.55,4);expect(recovered[2]).toBeCloseTo(.8,4);expect(recovered[5]).toBeCloseTo(.8*14/15,4);
+ });

@@ -87,7 +87,7 @@ for (const [width, height] of [[1366, 768], [1440, 900], [1920, 1080]]) test(`se
   expect(p.x + p.width).toBeLessThanOrEqual(width - 11);
   expect(p.y).toBeGreaterThanOrEqual(11);
   expect(p.y + p.height).toBeLessThanOrEqual(height - 11);
-  const heights = await panel.locator(".setting-row, .speed-segments input").evaluateAll(els => els.map(el => el.getBoundingClientRect().height));
+  const heights = await panel.locator(".setting-row, .speed-segments input").evaluateAll(els => els.map(el => (el as HTMLElement).offsetHeight));
   expect(heights.every(h => h >= 44)).toBe(true);
   await page.screenshot({
     path: `/tmp/em-settings-${width}.png`,
@@ -224,15 +224,13 @@ test("library has one name per sound; timer uses a fixed display and explains re
   await page.getByRole("button", {
     name: /^Hẹn giờ:/
   }).click();
-  await expect(page.getByText("Chọn mốc sẽ bắt đầu lại thời gian.")).toBeVisible();
+  await expect(page.getByText("Chọn thời lượng sẽ bắt đầu lại đồng hồ. Cộng phút giữ nguyên thời gian đã nghe.")).toBeVisible();
   await page.getByRole("button", {
     name: "15 phút",
     exact: true
   }).click();
   await expect(page.locator(".minimal-timer span")).toHaveText("15:00");
-  await page.getByRole("button", {
-    name: /^Hẹn giờ:/
-  }).click();
+  await expect(page.getByRole("dialog", { name: "Hẹn giờ", exact: true })).toBeVisible();
   await page.getByRole("button", {
     name: "Không giới hạn",
     exact: true

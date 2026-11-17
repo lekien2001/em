@@ -42,6 +42,7 @@ export function SceneOptions({
         </button>
       </div>
       <div className={"scene-options"}>
+        <button className="small-option favorites-open" aria-label="Phiên yêu thích" title="Phiên yêu thích" onClick={() => setPanel("favorites")}><span aria-hidden="true">♡</span><span>Phiên yêu thích</span></button>
         <button className="small-option face-open" aria-label="Mặt cừu của bạn" title="Mặt cừu của bạn" onClick={() => setPanel("face")}><span aria-hidden="true">☺</span><span>Mặt cừu của bạn</span></button>
         <label className={"speed-control"}>
           <span>{"Tốc độ:"}</span>

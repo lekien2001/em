@@ -22,23 +22,26 @@ export function AnchoredPanel({
   useLayoutEffect(() => {
     const element = container.current,
       bar = barRef.current;
-    const anchor = bar?.querySelector<HTMLElement>(`[data-panel-trigger="${panel}"]`);
+    const anchor = bar?.querySelector<HTMLElement>(`[data-panel-trigger="${panel === "favorites" ? "options" : panel}"]`);
     if (!element || !bar || !anchor) return;
     const update = () => {
       const next = placePanel({
         width: innerWidth,
         height: innerHeight
-      }, bar.getBoundingClientRect(), anchor.getBoundingClientRect(), element.getBoundingClientRect(), panel === "volume");
+      }, bar.getBoundingClientRect(), anchor.getBoundingClientRect(), { width: element.offsetWidth, height: element.scrollHeight + element.offsetHeight - element.clientHeight }, panel === "volume");
       setPlacement(old => old && Object.keys(next).every(key => old[key as keyof PanelPlacement] === next[key as keyof PanelPlacement]) ? old : next);
     };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(element);
     observer.observe(bar);
+    const contentObserver = new MutationObserver(update);
+    contentObserver.observe(element, { childList: true, subtree: true, characterData: true });
     window.addEventListener("resize", update);
     window.visualViewport?.addEventListener("resize", update);
     return () => {
       observer.disconnect();
+      contentObserver.disconnect();
       window.removeEventListener("resize", update);
       window.visualViewport?.removeEventListener("resize", update);
     };
@@ -61,7 +64,7 @@ export function AnchoredPanel({
       if (event.key !== "Escape") return;
       event.preventDefault();
       event.stopPropagation();
-      barRef.current?.querySelector<HTMLElement>(`[data-panel-trigger="${panel}"]`)?.focus({
+      barRef.current?.querySelector<HTMLElement>(`[data-panel-trigger="${panel === "favorites" ? "options" : panel}"]`)?.focus({
         preventScroll: true
       });
       latestClose.current();
@@ -76,7 +79,7 @@ export function AnchoredPanel({
     };
   }, [panel, barRef]);
   const dismiss = () => {
-    barRef.current?.querySelector<HTMLElement>(`[data-panel-trigger="${panel}"]`)?.focus();
+    barRef.current?.querySelector<HTMLElement>(`[data-panel-trigger="${panel === "favorites" ? "options" : panel}"]`)?.focus();
     close();
   };
   return <div ref={container} id={`desktop-panel-${panel}`} data-panel={panel} data-side={placement?.side} data-immersive-ui="true" className={`desktop-popover popover-${panel}`} role="dialog" aria-modal="false" aria-label={title} tabIndex={-1} style={{

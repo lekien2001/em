@@ -29,6 +29,8 @@ Từ phiên bản 0.5.0, mở **⋯ → Mặt cừu của bạn** để chọn �
 
 Phiên bản 0.6.0 thiết kế lại settings desktop theo từng hàng, dùng radio Chậm/Vừa và công tắc trạng thái. Bảng nhỏ nằm gần thanh phát, vẫn cho Play/Pause; mute khôi phục đúng mức âm lượng cũ, kể cả sau reload. Chi tiết hành vi, cấu trúc và kiểm tra ở [docs/desktop-controls.md](docs/desktop-controls.md).
 
+Phiên bản 0.7.0 thêm **Âm thanh → Trộn**, hẹn giờ tùy chỉnh 1–720 phút, cộng 5/10 phút, kết thúc êm dần 15/60/180 giây và **⋯ → Phiên yêu thích**. Âm thanh và cảnh cùng giảm dần; phiên yêu thích lưu cấu hình trên trình duyệt, áp dụng ở trạng thái tạm dừng. Chi tiết tại [docs/session-experience.md](docs/session-experience.md).
+
 Playwright tự khởi động build/preview khi chưa có preview đang chạy. Trên môi trường có Chromium ở `/usr/bin/chromium`, kiểm thử dùng trình duyệt đó; nơi khác chạy `npx playwright install chromium` trước. Có thể chỉ định trình duyệt bằng `CHROMIUM_PATH`. Các kiểm thử WebGL dùng SwiftShader để chạy ổn định trong cloud, không xác nhận FPS GPU máy thật.
 
 `npm run demo` tạo **`artifacts/em-final.html`** nhúng toàn bộ mã, ảnh, GLB và âm thanh tổng hợp, mở độc lập khi không có mạng. Script kiểm tra offline và phục hồi nguồn cần Chromium hệ thống như môi trường cloud.

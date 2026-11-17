@@ -13,8 +13,14 @@ import { useImmersiveControls } from "../ui/useImmersiveControls";
 import { FaceEditor } from "../face/FaceEditor";
 import { usePersonalFace } from "../face/usePersonalFace";
 import { DesktopPanels } from "../ui/DesktopPanels";
+import { useFavorites } from "../session/useFavorites";
+import { formatRemaining, type FavoriteConfig } from "../session/config";
+import type { Favorite } from "../session/favorites";
+import { FavoritesPanel } from "../ui/FavoritesPanel";
 import { DesktopSettings } from "../ui/DesktopSettings";
 export function App() {
+  const favorites = useFavorites();
+  const [endDimDismissed, setEndDimDismissed] = React.useState(false);
   const personalFace = usePersonalFace();
   const barRef = React.useRef<HTMLDivElement>(null);
   let session = useRelaxationSession(),
@@ -35,8 +41,11 @@ export function App() {
     immersion = useImmersiveControls({
       playing: session.playing,
       sleep: sleep,
-      blocked: !!panel || !!session.error || session.starting || session.ended,
-      wake: () => setSleep(false),
+      blocked: !!panel || !!session.error || !!session.mixError || session.starting || session.ended,
+      wake: () => {
+        setSleep(false);
+        if (session.ended) setEndDimDismissed(true);
+      },
     }),
     immersiveProps = {
       "data-immersive-ui": true,
@@ -54,27 +63,22 @@ export function App() {
     return () => x.removeEventListener("change", L);
   }, []);
   React.useEffect(() => {
-    session.ended && setSleep(true);
+    if (session.ended) { setSleep(true); setEndDimDismissed(false); }
   }, [session.ended]);
   React.useEffect(() => {
     if (!sleep || immersion.desktop) return;
     let x = (L: KeyboardEvent) => {
       setSleep(false);
+      setEndDimDismissed(true);
       L.key !== "Tab" && (L.preventDefault(), L.stopPropagation());
     };
     document.addEventListener("keydown", x, true);
     return () => document.removeEventListener("keydown", x, true);
   }, [sleep, immersion.desktop]);
-  let timerLabel =
-    session.remaining === null
-      ? "Không giới hạn"
-      : `${Math.floor(session.remaining / 6e4)
-          .toString()
-          .padStart(2, "0")}:${Math.floor((session.remaining % 6e4) / 1e3)
-          .toString()
-          .padStart(2, "0")}`;
+  const timerLabel = formatRemaining(session.remaining);
   function toggleSession() {
     session.ended && (setCount(0), setSessionId((x) => x + 1));
+    setEndDimDismissed(false);
     session.toggle();
   }
   let sceneOptions = (
@@ -101,6 +105,7 @@ export function App() {
       setShowCount={setShowCount}
       sceneReady={sceneReady}
       faceApplied={!!personalFace.photo}
+      openFavorites={() => setPanel("favorites")}
       reset={() => { closePanel(); setReset(x => x + 1); }}
       dim={() => { closePanel(); setSleep(true); }}
       openFace={() => {
@@ -109,6 +114,25 @@ export function App() {
       }}
     />
   );
+  function configuration(): FavoriteConfig {
+    return { ...session.getConfiguration(), speed, reduced, showCount };
+  }
+  function applyFavorite(favorite: Favorite) {
+    session.applyConfiguration(favorite.config);
+    setSpeed(favorite.config.speed);
+    setReduced(favorite.config.reduced);
+    setShowCount(favorite.config.showCount);
+    setCount(0);
+    setSessionId(x => x + 1);
+    setSleep(false);
+    setEndDimDismissed(false);
+    closePanel();
+  }
+  const favoritesContent = (
+    <FavoritesPanel favorites={favorites} current={configuration} apply={applyFavorite}
+      back={() => setPanel(immersion.desktop ? "options" : null)} />
+  );
+  const automaticDim = session.ended && endDimDismissed ? 0 : .7 * (1 - session.fade);
   return (
     <main
       className={`app ${sleep ? "is-sleeping" : ""} ${session.ended ? "has-ended" : ""} ${immersion.desktop ? "desktop-immersion" : ""} ${immersion.hidden ? "is-immersed" : ""} ${immersion.concealed ? "ui-concealed" : ""} ${reduced ? "reduce-motion" : ""}`}
@@ -119,14 +143,14 @@ export function App() {
       onPointerDownCapture={(x) => {
         sleep &&
           !immersion.desktop &&
-          (setSleep(false),
+          (setSleep(false), setEndDimDismissed(true),
           (x.target as Element).closest("[data-pause]") ||
             (x.preventDefault(), x.stopPropagation()));
       }}
       onKeyDownCapture={(x) => {
         sleep &&
           !immersion.desktop &&
-          (setSleep(false),
+          (setSleep(false), setEndDimDismissed(true),
           x.key !== "Tab" && (x.preventDefault(), x.stopPropagation()));
       }}
     >
@@ -158,7 +182,8 @@ export function App() {
         />
       </React.Suspense>
       <div className={"scene-shade"} aria-hidden={"true"} />
-      <div className={"sleep-shade"} aria-hidden={"true"} />
+      <div className={"sleep-shade"} aria-hidden={"true"}
+        style={{ opacity: Math.max(sleep ? .7 : 0, automaticDim) }} />
       {immersion.desktop ? (
         <>
           {!hasStarted && (
@@ -223,17 +248,23 @@ export function App() {
           <button onClick={() => setPanel("library")}>{"Chọn bài khác"}</button>
         </div>
       )}
+      {session.mixError && panel !== "library" && (
+        <div className="audio-error" role="alert">
+          {session.mixError}<button onClick={() => setPanel("library")}>Chỉnh bản phối</button>
+        </div>
+      )}
       {personalFace.error && <div className="audio-error" role="alert">{personalFace.error}<button onClick={personalFace.restore}>Khôi phục</button></div>}
       {panel === "face" && <FaceEditor face={personalFace} close={closePanel} sceneReady={sceneReady} />}
 
       {immersion.desktop ? (
-        <DesktopPanels panel={panel} barRef={barRef} closePanel={closePanel} session={session} timerLabel={timerLabel} settings={desktopSettings} />
+        <DesktopPanels panel={panel} barRef={barRef} closePanel={closePanel} session={session} timerLabel={timerLabel} settings={desktopSettings} favorites={favoritesContent} />
       ) : <SessionPanels
         closePanel={closePanel}
         immersion={immersion}
         panel={panel}
         session={session}
         toggleSession={toggleSession}
+        favorites={favoritesContent}
       />}
     </main>
   );
