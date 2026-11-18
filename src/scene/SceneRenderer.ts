@@ -32,6 +32,14 @@ import {
 import { createWorld } from "./world";
 type RenderWorld = Awaited<ReturnType<typeof createWorld>>;
 type ShadowCache = ReturnType<typeof cacheStaticShadows>;
+type ViewportSize = { width: number; height: number; pixelRatio: number };
+const RESIZE_SETTLE_MS = 120;
+
+function sameViewport(a: ViewportSize | undefined, b: ViewportSize | undefined) {
+  return a === b || (!!a && !!b &&
+    a.width === b.width && a.height === b.height && a.pixelRatio === b.pixelRatio);
+}
+
 type CameraTransition = {
   from: Vector3;
   target: Vector3;
@@ -133,10 +141,18 @@ export function createSceneRenderer(
     reportCrossings = (kA: { crossings: number }) => {
       for (let nA = 0; nA < kA.crossings; nA++) getProps().onCount();
     };
+  let appliedViewport: ViewportSize | undefined;
+  let pendingViewport: ViewportSize | undefined;
+  let resizeTimer: number | undefined;
+  let firstFrameAfterResize = false;
+  let resolutionQuery: MediaQueryList;
+  let observedDpr = devicePixelRatio;
+
   function scheduleFrame() {
     !disposed &&
       !contextLost &&
       !document.hidden &&
+      resizeTimer === undefined &&
       !frameRequest &&
       (frameRequest = requestAnimationFrame(frame));
   }
@@ -162,31 +178,76 @@ export function createSceneRenderer(
         });
     scheduleFrame();
   }
-  function resize() {
-    let { width: kA, height: nA } = host.getBoundingClientRect();
-    camera.aspect = kA / Math.max(nA, 1);
-    camera.updateProjectionMatrix();
-    world?.resize(camera.aspect, nA);
-    renderer.setSize(kA, nA);
-    scheduleFrame();
+  function readViewport(): ViewportSize | undefined {
+    const width = host.clientWidth;
+    const height = host.clientHeight;
+    if (!width || !height) return;
+    const ratioLimit = quality.value === "low" ? 0.8 : quality.value === "balanced" ? (width < 700 ? 1 : 1.25) : 1.6;
+    return { width, height, pixelRatio: Math.min(devicePixelRatio, ratioLimit) };
   }
+
+  function applyViewport(size: ViewportSize | undefined) {
+    if (!size || sameViewport(appliedViewport, size)) return;
+    appliedViewport = size;
+    const { width, height, pixelRatio } = size;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    world?.resize(camera.aspect, height);
+    // CSS scales the last frame during the drag. Only reallocate the drawing
+    // buffer at the settled size, with DPR applied in the same operation.
+    renderer.setDrawingBufferSize(width, height, pixelRatio);
+  }
+
+  function cancelResize() {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = undefined;
+    pendingViewport = undefined;
+  }
+
+  function queueResize() {
+    if (disposed || contextLost || document.hidden) return;
+    const size = readViewport();
+    if (!size || sameViewport(resizeTimer === undefined ? appliedViewport : pendingViewport, size)) return;
+    pendingViewport = size;
+    if (frameRequest) {
+      cancelAnimationFrame(frameRequest);
+      frameRequest = 0;
+    }
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      cancelResize();
+      if (disposed || contextLost || document.hidden) return;
+      applyViewport(readViewport());
+      firstFrameAfterResize = true;
+      previousFrameAt = performance.now();
+      frameMonitor.suspend();
+      scheduleFrame();
+    }, RESIZE_SETTLE_MS);
+  }
+
+  function watchResolution() {
+    resolutionQuery?.removeEventListener("change", onResolutionChanged);
+    observedDpr = devicePixelRatio;
+    resolutionQuery = matchMedia(`(resolution: ${observedDpr}dppx)`);
+    resolutionQuery.addEventListener("change", onResolutionChanged);
+  }
+
+  function onResolutionChanged() {
+    watchResolution();
+    queueResize();
+  }
+
   function applyQuality() {
-    let kA = quality.value,
-      nA = host.clientWidth < 700;
-    renderer.setPixelRatio(
-      Math.min(
-        devicePixelRatio,
-        kA === "low" ? 0.8 : kA === "balanced" ? (nA ? 1 : 1.25) : 1.6,
-      ),
-    );
-    moonLight.castShadow = kA !== "low";
-    renderer.shadowMap.enabled = kA !== "low";
-    moonLight.shadow.mapSize.setScalar(kA === "high" ? 2048 : 1024);
+    const level = quality.value;
+    moonLight.castShadow = level !== "low";
+    renderer.shadowMap.enabled = level !== "low";
+    moonLight.shadow.mapSize.setScalar(level === "high" ? 2048 : 1024);
     moonLight.shadow.map?.dispose();
     moonLight.shadow.map = null;
-    world?.quality(kA);
-    resize();
-    host.dataset.quality = kA;
+    world?.quality(level);
+    applyViewport(readViewport());
+    host.dataset.quality = level;
+    scheduleFrame();
   }
   function sync() {
     previousFrameAt = performance.now();
@@ -203,7 +264,7 @@ export function createSceneRenderer(
   function frame(kA: number) {
     let nA = performance.now();
     frameRequest = 0;
-    if (disposed || document.hidden || !world || !ready) return;
+    if (disposed || contextLost || document.hidden || resizeTimer !== undefined || !world || !ready) return;
     let q = clock.sample(nA);
     reportCrossings(q);
     let m = Math.max(0, q.phase - previousPhase);
@@ -267,7 +328,8 @@ export function createSceneRenderer(
       renderer.info.render.calls,
       renderer.info.render.triangles,
     );
-    AA.playing && quality.observe(Z, nA) && applyQuality();
+    if (AA.playing && !firstFrameAfterResize && quality.observe(Z, nA)) applyQuality();
+    firstFrameAfterResize = false;
     previousFrameAt = nA;
     renderedFrames++;
     (nA - previousStatsAt > 750 || !AA.playing) &&
@@ -358,6 +420,8 @@ export function createSceneRenderer(
   };
   canvas.addEventListener("keydown", onKey);
   let onVisibility = () => {
+    if (document.hidden) cancelResize();
+    else queueResize();
     sync();
     previousFrameAt = performance.now();
     document.hidden &&
@@ -367,6 +431,8 @@ export function createSceneRenderer(
   document.addEventListener("visibilitychange", onVisibility);
   let onContextLost = (kA: Event) => {
     contextLost = true;
+    cancelResize();
+    window.clearInterval(resolutionPoll);
     kA.preventDefault();
     setFallback(true);
     setReady(false);
@@ -375,8 +441,15 @@ export function createSceneRenderer(
     frameRequest = 0;
   };
   canvas.addEventListener("webglcontextlost", onContextLost);
-  let resizeObserver = new ResizeObserver(resize);
+  let resizeObserver = new ResizeObserver(queueResize);
   resizeObserver.observe(host);
+  window.addEventListener("resize", queueResize);
+  watchResolution();
+  // Chromium DevTools can change DPR without delivering a resize or media event.
+  // A scalar check while visible catches that case without touching layout or WebGL.
+  const resolutionPoll = window.setInterval(() => {
+    if (!document.hidden && devicePixelRatio !== observedDpr) onResolutionChanged();
+  }, 250);
   resetCamera(true);
   applyQuality();
   const handle = {
@@ -450,9 +523,12 @@ export function createSceneRenderer(
     dispose() {
       if (disposed) return;
       disposed = true;
-      void 0;
+      cancelResize();
+      window.clearInterval(resolutionPoll);
       frameRequest && cancelAnimationFrame(frameRequest);
       resizeObserver.disconnect();
+      window.removeEventListener("resize", queueResize);
+      resolutionQuery.removeEventListener("change", onResolutionChanged);
       document.removeEventListener("visibilitychange", onVisibility);
       canvas.removeEventListener("keydown", onKey);
       canvas.removeEventListener("webglcontextlost", onContextLost);

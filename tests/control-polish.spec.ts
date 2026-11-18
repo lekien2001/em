@@ -52,8 +52,12 @@ for (const [width, height] of [[1366, 768], [1440, 900], [1920, 1080]]) {
         await field.focus();
         const focused = await field.evaluate(el => { const s = getComputedStyle(el); return { h: el.getBoundingClientRect().height, outline: s.outlineStyle, shadow: s.boxShadow, appearance: s.appearance }; });
         expect(focused.h).toBe(44); expect(focused.outline).toBe('none'); expect(focused.shadow).toMatch(/0px 0px 0px 2px/); expect(focused.appearance).toBe('textfield');
-        const a = (await field.boundingBox())!, b = (await apply.boundingBox())!;
-        expect(b.width).toBe(80); expect(b.height).toBe(a.height); expect(b.y).toBe(a.y);
+        const dimensions = await field.evaluate(element => {
+          const a = element.getBoundingClientRect();
+          const b = element.nextElementSibling!.getBoundingClientRect();
+          return { buttonWidth: b.width, heightDelta: b.height - a.height, topDelta: b.top - a.top };
+        });
+        expect(dimensions).toEqual({ buttonWidth: 80, heightDelta: 0, topDelta: 0 });
         await field.fill("59"); await field.press('ArrowUp'); await expect(field).toHaveValue('60'); await apply.click();
         await field.fill("720"); await apply.click(); await expect(page.locator('.minimal-timer > span')).toHaveText('12:00:00');
         expect((await toolbar.boundingBox())!.width).toBe(initial.width);
@@ -69,6 +73,17 @@ for (const [width, height] of [[1366, 768], [1440, 900], [1920, 1080]]) {
         expect(slots.every(s => s.dx <= 1 && s.dy <= 1)).toBe(true);
         await expect(page.locator('.desktop-settings .setting-chevron')).toHaveCount(2);
         expect(await page.locator('.desktop-settings .setting-chevron').evaluateAll(els => els.every(el => el.tagName.toLowerCase() === 'svg'))).toBe(true);
+        await page.getByRole('switch', { name: 'Giảm chuyển động' }).click();
+        const insets = await page.locator('.popover-options').evaluate(panel => {
+          const left = panel.getBoundingClientRect().left + panel.clientLeft;
+          return Array.from(panel.querySelectorAll('h2, h3, .setting-row > span:first-child, .setting-help, .setting-face small'), element => {
+            const text = document.createRange();
+            text.selectNodeContents(element);
+            return text.getBoundingClientRect().left - left;
+          });
+        });
+        expect(insets.length).toBeGreaterThan(10);
+        expect(insets.every(inset => Math.abs(inset - 24) <= 1)).toBe(true);
         await withinViewport(page);
         await page.keyboard.press('Escape');
         await page.getByRole('button', { name: /^Chọn âm thanh/ }).click(); await page.getByRole('tab', { name: 'Trộn', exact: true }).click();
@@ -87,7 +102,10 @@ test('favorite cards keep equal actions and return focus after rename/cancel/del
   const sizes=await card.locator('.favorite-actions button').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return{w:r.width,h:r.height,fits:el.scrollWidth<=el.clientWidth};}));
   expect(sizes).toHaveLength(4);expect(Math.max(...sizes.map(s=>s.w))-Math.min(...sizes.map(s=>s.w))).toBeLessThanOrEqual(1);expect(sizes.every(s=>s.h===44&&s.fits)).toBe(true);
   await card.getByRole('button',{name:'Đổi tên',exact:true}).focus();await page.keyboard.press('Enter');await expect(page.getByLabel('Đổi tên phiên',{exact:true})).toBeFocused();await expect(card.locator('.favorite-actions')).toHaveCount(0);
-  const field=(await page.getByLabel('Đổi tên phiên',{exact:true}).boundingBox())!,save=(await button(page,'Lưu tên').boundingBox())!,cancel=(await button(page,'Hủy').boundingBox())!;
+  const { field, save, cancel } = await card.locator('.favorite-rename .inline-fields').evaluate(element => {
+    const [field, save, cancel] = Array.from(element.children, child => child.getBoundingClientRect().toJSON());
+    return { field, save, cancel };
+  });
   expect(save.y).toBeGreaterThanOrEqual(field.y+field.height+7);expect(save.width).toBeCloseTo(cancel.width,0);expect(save.height).toBe(44);expect(field.width).toBeCloseTo(save.width+cancel.width+8,0);
   await page.getByRole('dialog').screenshot({path:'/tmp/em-polish-rename.png',animations:'disabled'});
   await button(page,'Hủy').click();await expect(card.getByRole('button',{name:'Đổi tên',exact:true})).toBeFocused();

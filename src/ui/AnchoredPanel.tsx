@@ -16,34 +16,50 @@ export function AnchoredPanel({
   children: ReactNode;
 }) {
   const container = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   const [placement, setPlacement] = useState<PanelPlacement | null>(null);
   const latestClose = useRef(close);
   latestClose.current = close;
   useLayoutEffect(() => {
     const element = container.current,
+      body = content.current,
       bar = barRef.current;
     const anchor = bar?.querySelector<HTMLElement>(`[data-panel-trigger="${panel === "favorites" ? "options" : panel}"]`);
-    if (!element || !bar || !anchor) return;
-    const update = () => {
+    if (!element || !body || !bar || !anchor) return;
+    let measured: PanelPlacement | undefined;
+    let measurementFrame = 0;
+    const measure = () => {
+      measurementFrame = 0;
+      const style = getComputedStyle(element);
+      const verticalInsets = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + element.offsetHeight - element.clientHeight;
       const next = placePanel({
         width: innerWidth,
         height: innerHeight
-      }, bar.getBoundingClientRect(), anchor.getBoundingClientRect(), { width: element.offsetWidth, height: element.scrollHeight + element.offsetHeight - element.clientHeight }, panel === "volume");
-      setPlacement(old => old && Object.keys(next).every(key => old[key as keyof PanelPlacement] === next[key as keyof PanelPlacement]) ? old : next);
+      }, bar.getBoundingClientRect(), anchor.getBoundingClientRect(), {
+        width: element.offsetWidth,
+        height: body.offsetHeight + verticalInsets,
+      }, panel === "volume");
+      if (measured && measured.left === next.left && measured.top === next.top &&
+          measured.maxHeight === next.maxHeight && measured.side === next.side) return;
+      measured = next;
+      setPlacement(next);
     };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(element);
+    const queueMeasure = () => {
+      if (!measurementFrame) measurementFrame = requestAnimationFrame(measure);
+    };
+    measure();
+    const observer = new ResizeObserver(queueMeasure);
+    // Observe the content at its natural height so applying a maxHeight to
+    // the outer panel doesn't itself trigger another placement measurement.
+    observer.observe(body);
     observer.observe(bar);
-    const contentObserver = new MutationObserver(update);
-    contentObserver.observe(element, { childList: true, subtree: true, characterData: true });
-    window.addEventListener("resize", update);
-    window.visualViewport?.addEventListener("resize", update);
+    window.addEventListener("resize", queueMeasure);
+    window.visualViewport?.addEventListener("resize", queueMeasure);
     return () => {
+      cancelAnimationFrame(measurementFrame);
       observer.disconnect();
-      contentObserver.disconnect();
-      window.removeEventListener("resize", update);
-      window.visualViewport?.removeEventListener("resize", update);
+      window.removeEventListener("resize", queueMeasure);
+      window.visualViewport?.removeEventListener("resize", queueMeasure);
     };
   }, [panel, barRef]);
   const positioned = placement !== null;
@@ -88,7 +104,9 @@ export function AnchoredPanel({
     maxHeight: placement?.maxHeight,
     visibility: placement ? "visible" : "hidden"
   }}>
-    {panel !== "volume" && <div className="popover-heading"><h2>{title}</h2><button className="popover-close" aria-label="Đóng" onClick={dismiss}><CloseIcon size={18} /></button></div>}
-    {children}
+    <div className="popover-content" ref={content}>
+      {panel !== "volume" && <div className="popover-heading"><h2>{title}</h2><button className="popover-close" aria-label="Đóng" onClick={dismiss}><CloseIcon size={18} /></button></div>}
+      {children}
+    </div>
   </div>;
 }
