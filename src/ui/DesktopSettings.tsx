@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { SheepSpeed } from "../types";
-import { Moon, ResetCamera } from "./icons";
+import { ChevronDown, Moon, ResetCamera } from "./icons";
 function SettingSwitch({
   label,
   checked,
@@ -11,7 +11,7 @@ function SettingSwitch({
   change(): void;
 }) {
   return <button className="setting-row setting-toggle" role="switch" aria-label={label} aria-checked={checked} onClick={change}>
-    <span>{label}</span><span className="setting-switch" aria-hidden="true"><span /></span>
+    <span>{label}</span><span className="setting-slot" aria-hidden="true"><span className="setting-switch"><span /></span></span>
   </button>;
 }
 export function DesktopSettings({
@@ -50,16 +50,16 @@ export function DesktopSettings({
       </div></div>
       {reduced && <p className="setting-help">Cố định ở Chậm khi giảm chuyển động.</p>}
       <SettingSwitch label="Hiện số đếm" checked={showCount} change={() => setShowCount(x => !x)} />
-      <button className="setting-row setting-action" onClick={reset} disabled={!sceneReady}><span>Về góc ban đầu</span><ResetCamera size={17} /></button>
+      <button className="setting-row setting-action" onClick={reset} disabled={!sceneReady}><span>Về góc ban đầu</span><span className="setting-slot" aria-hidden="true"><ResetCamera size={18} /></span></button>
     </section>
     <section aria-label="Thư giãn"><h3>Thư giãn</h3>
       <SettingSwitch label="Giảm chuyển động" checked={reduced} change={() => setReduced(x => !x)} />
-      <button className="setting-row setting-action" onClick={dim}><span>Làm tối cảnh</span><Moon size={17} /></button>
+      <button className="setting-row setting-action" onClick={dim}><span>Làm tối cảnh</span><span className="setting-slot" aria-hidden="true"><Moon size={18} /></span></button>
     </section>
     <section aria-label="Cá nhân hóa"><h3>Cá nhân hóa</h3>
-      <button className="setting-row setting-action" onClick={openFavorites}><span>Phiên yêu thích</span><span aria-hidden="true" className="setting-chevron">›</span></button>
+      <button className="setting-row setting-action" onClick={openFavorites}><span>Phiên yêu thích</span><span className="setting-slot" aria-hidden="true"><ChevronDown className="setting-chevron" size={18} /></span></button>
       <button className="setting-row setting-face" aria-label="Mặt cừu của bạn" onClick={openFace}>
-        <span><span>Mặt cừu của bạn</span><small>{faceApplied ? "Đã thêm ảnh" : "Chưa chọn ảnh"}</small></span><span aria-hidden="true" className="setting-chevron">›</span>
+        <span><span>Mặt cừu của bạn</span><small>{faceApplied ? "Đã thêm ảnh" : "Chưa chọn ảnh"}</small></span><span className="setting-slot" aria-hidden="true"><ChevronDown className="setting-chevron" size={18} /></span>
       </button>
     </section>
   </div>;

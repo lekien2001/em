@@ -35,7 +35,7 @@ export function SoundPicker({
               const next = copyMix(session.mix);
               next[sound.id].enabled = !channel.enabled;
               session.setMix(next);
-            }}><span>{sound.label}</span><span className="setting-switch" aria-hidden="true"><span /></span></button>
+            }}><span>{sound.label}</span><span className="setting-slot" aria-hidden="true"><span className="setting-switch"><span /></span></span></button>
         <div className="mix-level"><input type="range" min="0.01" max="1" step="0.01" aria-label={`Mức ${sound.label.toLocaleLowerCase("vi")}`} aria-valuetext={`${Math.round(channel.level * 100)}%`} value={channel.level} disabled={!channel.enabled} onChange={event => {
                 const next = copyMix(session.mix);
                 next[sound.id].level = Number(event.target.value);
