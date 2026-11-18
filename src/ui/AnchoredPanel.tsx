@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { CloseIcon } from "./icons";
+import { ArrowLeft, CloseIcon } from "./icons";
 import { placePanel, type PanelPlacement } from "./panelPlacement";
 import type { DesktopPanel } from "./types";
 export function AnchoredPanel({
@@ -7,12 +7,14 @@ export function AnchoredPanel({
   title,
   barRef,
   close,
+  back,
   children
 }: {
   panel: DesktopPanel;
   title: string;
   barRef: RefObject<HTMLDivElement | null>;
   close(): void;
+  back?(): void;
   children: ReactNode;
 }) {
   const container = useRef<HTMLDivElement>(null);
@@ -105,7 +107,11 @@ export function AnchoredPanel({
     visibility: placement ? "visible" : "hidden"
   }}>
     <div className="popover-content" ref={content}>
-      {panel !== "volume" && <div className="popover-heading"><h2>{title}</h2><button className="popover-close" aria-label="Đóng" onClick={dismiss}><CloseIcon size={18} /></button></div>}
+      {panel !== "volume" && <div className="popover-heading">
+        {back && <button type="button" className="popover-back" aria-label="Quay lại Tùy chọn" onClick={back}><ArrowLeft size={16} /></button>}
+        <h2>{title}</h2>
+        <button type="button" className="popover-close" aria-label="Đóng" onClick={dismiss}><CloseIcon size={18} /></button>
+      </div>}
       {children}
     </div>
   </div>;

@@ -130,7 +130,7 @@ export function App() {
   }
   const favoritesContent = (
     <FavoritesPanel favorites={favorites} current={configuration} apply={applyFavorite}
-      back={() => setPanel(immersion.desktop ? "options" : null)} />
+      back={immersion.desktop ? undefined : closePanel} />
   );
   const automaticDim = session.ended && endDimDismissed ? 0 : .7 * (1 - session.fade);
   return (
@@ -254,11 +254,15 @@ export function App() {
           {session.mixError}<button onClick={() => setPanel("library")}>Chỉnh bản phối</button>
         </div>
       )}
+      {session.noticeVisible && !session.mixError && panel !== "library" && (
+        <div className="audio-error" role="status">{session.audioNotice}</div>
+      )}
       {personalFace.error && <div className="audio-error" role="alert">{personalFace.error}<button onClick={personalFace.restore}>Khôi phục</button></div>}
       {panel === "face" && <FaceEditor face={personalFace} close={closePanel} sceneReady={sceneReady} />}
 
       {immersion.desktop ? (
-        <DesktopPanels panel={panel} barRef={barRef} closePanel={closePanel} session={session} timerLabel={timerLabel} settings={desktopSettings} favorites={favoritesContent} />
+        <DesktopPanels panel={panel} barRef={barRef} closePanel={closePanel} session={session} timerLabel={timerLabel}
+          settings={desktopSettings} favorites={favoritesContent} backToOptions={() => setPanel("options")} />
       ) : <SessionPanels
         closePanel={closePanel}
         immersion={immersion}

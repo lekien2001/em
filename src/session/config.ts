@@ -1,5 +1,6 @@
 import type { FadeSeconds, SheepSpeed, SoundId } from "../types";
-export const SOUND_IDS: SoundId[] = ["rain", "stream", "brown"];
+import { isRecording, sounds } from "../audio/catalog";
+export const SOUND_IDS = sounds.map(sound => sound.id);
 export type MixConfig = Record<SoundId, {
   enabled: boolean;
   level: number;
@@ -16,17 +17,8 @@ export type FavoriteConfig = SessionConfig & {
   reduced: boolean;
   showCount: boolean;
 };
-export const copyMix = (mix: MixConfig): MixConfig => ({
-  rain: {
-    ...mix.rain
-  },
-  stream: {
-    ...mix.stream
-  },
-  brown: {
-    ...mix.brown
-  }
-});
+export const copyMix = (mix: MixConfig): MixConfig =>
+  Object.fromEntries(SOUND_IDS.map(id => [id, { ...mix[id] }])) as MixConfig;
 export function singleMix(id: SoundId, previous?: MixConfig): MixConfig {
   return Object.fromEntries(SOUND_IDS.map(sound => [sound, {
     enabled: sound === id,
@@ -40,6 +32,17 @@ export const validFade = (v: unknown): v is FadeSeconds => v === 15 || v === 60 
 export function validMix(value: unknown): value is MixConfig {
   const mix = value as MixConfig | null;
   return !!mix && SOUND_IDS.every(id => typeof mix[id]?.enabled === "boolean" && Number.isFinite(mix[id].level) && mix[id].level >= .01 && mix[id].level <= 1) && enabledSounds(mix).length > 0;
+}
+export function restoreMix(value: unknown): MixConfig | null {
+  if (validMix(value)) return copyMix(value);
+  if (!value || typeof value !== "object") return null;
+  const legacy = SOUND_IDS.every(id => !isRecording(id) || !Object.hasOwn(value, id));
+  if (!legacy) return null;
+  const defaults = singleMix("rain");
+  const migrated = Object.fromEntries(SOUND_IDS.map(id => [id,
+    isRecording(id) ? defaults[id] : (value as Partial<MixConfig>)[id],
+  ]));
+  return validMix(migrated) ? copyMix(migrated) : null;
 }
 export function validFavoriteConfig(value: unknown): value is FavoriteConfig {
   const c = value as FavoriteConfig | null;

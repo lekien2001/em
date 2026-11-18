@@ -10,10 +10,12 @@ export function DesktopPanels({
   closePanel,
   session,
   settings,
-  favorites
+  favorites,
+  backToOptions,
 }: Pick<ControlsProps, "panel" | "barRef" | "closePanel" | "session" | "timerLabel"> & {
   settings: ReactNode;
   favorites: ReactNode;
+  backToOptions(): void;
 }) {
   if (!isDesktopPanel(panel)) return null;
   const titles = {
@@ -27,7 +29,8 @@ export function DesktopPanels({
     barRef.current?.querySelector<HTMLElement>(`[data-panel-trigger="${panel === "favorites" ? "options" : panel}"]`)?.focus();
     closePanel();
   };
-  return <AnchoredPanel key={panel} panel={panel} title={titles[panel]} barRef={barRef} close={closePanel}>
+  return <AnchoredPanel key={panel} panel={panel} title={titles[panel]} barRef={barRef} close={closePanel}
+    back={panel === "favorites" ? backToOptions : undefined}>
     {panel === "options" && settings}
     {panel === "favorites" && favorites}
     {panel === "library" && <SoundPicker session={session} close={close} />}
@@ -36,6 +39,6 @@ export function DesktopPanels({
       <input data-initial-focus="true" type="range" min="0" max="1" step="0.01" aria-label="Âm lượng" aria-valuetext={`${Math.round(session.volume * 100)}%`} value={session.volume} onChange={event => session.setVolume(Number(event.target.value))} />
       <output aria-label="Mức âm lượng">{Math.round(session.volume * 100)}%</output>
     </div>}
-    {panel === "timer" && <TimerControls session={session} />}
+    {panel === "timer" && <TimerControls session={session} showPresetCheck={false} />}
   </AnchoredPanel>;
 }

@@ -61,7 +61,25 @@ try{
  await activate(fallback.getByRole('button',{name:'Bắt đầu thư giãn',exact:true}));await expect(fallback.locator('main')).toHaveAttribute('data-playing','true');
  await fallback.keyboard.press('Tab');await expect(fallback.getByRole('button',{name:'Tạm dừng phiên thư giãn',exact:true})).toBeFocused();await fallback.keyboard.press('Space');await expect(fallback.locator('main')).toHaveAttribute('data-playing','false');
  await activate(fallback.getByRole('button',{name:'Tùy chọn',exact:true}));await activate(fallback.getByRole('button',{name:'Phiên yêu thích',exact:true}));await fallback.getByLabel('Lưu cấu hình hiện tại',{exact:true}).fill('Tệp cục bộ');await activate(fallback.getByRole('button',{name:'Lưu',exact:true}));await expect(fallback.getByRole('article',{name:'Tệp cục bộ',exact:true})).toBeVisible();if(fileUrlVerified){await fallback.reload();await expect(fallback.locator('main')).toHaveAttribute('data-playing','false');await activate(fallback.getByRole('button',{name:'Tùy chọn',exact:true}));await activate(fallback.getByRole('button',{name:'Phiên yêu thích',exact:true}));await expect(fallback.getByRole('article',{name:'Tệp cục bộ',exact:true})).toBeVisible();}else{await expect(fallback.getByText(/Thay đổi chỉ được giữ/)).toBeVisible();}
- report.fileUrlVerified=fileUrlVerified;report.workerAndWebglFallback=true;expect(errors).toEqual([]);expect(network).toEqual([]);await fallbackContext.close();
+ report.fileUrlVerified=fileUrlVerified;report.workerAndWebglFallback=true;expect(errors).toEqual([]);expect(network).toEqual([]);
+ const recordingPage = await fallbackContext.newPage();
+ const recordingRequests = [];
+ recordingPage.on('pageerror',error=>errors.push(error.message));
+ recordingPage.on('request',request=>{if(/^https?:/.test(request.url()))recordingRequests.push(request.url());});
+ await recordingPage.evaluate(setupFallback);
+ await recordingPage.setContent(html,{waitUntil:'load',timeout:180000});
+ const recordingPicker = recordingPage.getByRole('button',{name:/^Chọn âm thanh/});
+ await activate(recordingPicker);
+ await activate(recordingPage.getByRole('button',{name:'Mưa bên cửa sổ',exact:true}));
+ expect(recordingRequests).toEqual([]);
+ await activate(recordingPage.getByRole('button',{name:'Bắt đầu thư giãn',exact:true}));
+ await expect(recordingPage.locator('main')).toHaveAttribute('data-playing','true');
+ await expect(recordingPage.getByRole('status').filter({hasText:'Đang phát Mưa nhẹ tổng hợp.'})).toBeVisible();
+ await expect(recordingPage.locator('.minimal-sound')).toContainText('Mưa bên cửa sổ');
+ expect(recordingRequests.length).toBeGreaterThan(0);
+ expect(recordingRequests.every(url=>url.startsWith('https://raw.githubusercontent.com/lekien2001/storage/'))).toBe(true);
+ report.offlineRecordingFallback=true;
+ await fallbackContext.close();
  // Test persistent storage using an offline, intercepted local origin; no server request is sent.
  const storageContext=await browser.newContext({offline:true,viewport:{width:1440,height:900}});await storageContext.addInitScript(setupFallback);const storagePage=await storageContext.newPage();storagePage.on('pageerror',e=>errors.push(e.message));const origin='http://127.0.0.1:4173/portable-storage-qa';const storageRequests=[];storagePage.on('request',r=>storageRequests.push(r.url()));await storagePage.route(origin,route=>route.fulfill({contentType:'text/html',body:html}));await storagePage.goto(origin);await activate(storagePage.getByRole('button',{name:'Tùy chọn',exact:true}));await activate(storagePage.getByRole('button',{name:'Phiên yêu thích',exact:true}));await storagePage.getByLabel('Lưu cấu hình hiện tại',{exact:true}).fill('Lưu offline');await activate(storagePage.getByRole('button',{name:'Lưu',exact:true}));await storagePage.reload();await expect(storagePage.locator('main')).toHaveAttribute('data-playing','false');await activate(storagePage.getByRole('button',{name:'Tùy chọn',exact:true}));await activate(storagePage.getByRole('button',{name:'Phiên yêu thích',exact:true}));await expect(storagePage.getByRole('article',{name:'Lưu offline',exact:true})).toBeVisible();expect(storageRequests.every(url=>url===origin)).toBe(true);report.persistedWithNetworkDisabled=true;await storageContext.close();expect(errors).toEqual([]);
  await writeFile('artifacts/offline.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));

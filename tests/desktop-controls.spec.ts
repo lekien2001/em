@@ -214,8 +214,8 @@ test("library has one name per sound; timer uses a fixed display and explains re
     name: "Âm thanh",
     exact: true
   }).locator(".compact-sound");
-  await expect(sounds).toHaveCount(3);
-  expect(await sounds.allTextContents()).toEqual(["Mưa nhẹ", "Tiếng suối", "Brown noise"]);
+  await expect(sounds).toHaveCount(6);
+  expect(await sounds.allTextContents()).toEqual(["Mưa nhẹ", "Tiếng suối", "Brown noise", "Mưa bên cửa sổ", "Âm miệng ASMR", "Lục hộp LEGO"]);
   await page.getByRole("button", {
     name: "Brown noise",
     exact: true

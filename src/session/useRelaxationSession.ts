@@ -2,14 +2,14 @@ import { useEffect, useReducer, useRef, useState, type SetStateAction } from "re
 import { AudioEngine } from "../audio/AudioEngine";
 import { sounds } from "../audio/catalog";
 import type { FadeSeconds, SoundId } from "../types";
-import { copyMix, enabledSounds, mixKey, singleMix, validFade, validMix, type MixConfig, type SessionConfig } from "./config";
+import { copyMix, enabledSounds, mixKey, restoreMix, singleMix, validFade, validMix, type MixConfig, type SessionConfig } from "./config";
 import { SessionTimer } from "./SessionTimer";
 import { readPreference, writePreference } from "./preferences";
 const audioError = "Chưa thể phát âm thanh. Hãy thử lại hoặc chọn âm thanh khác.";
 function initialMix() {
   try {
-    const value: unknown = JSON.parse(readPreference("mix-v1", "null"));
-    if (validMix(value)) return value;
+    const mix = restoreMix(JSON.parse(readPreference("mix-v1", "null")));
+    if (mix) return mix;
   } catch {/* Migrate legacy selection. */}
   const saved = readPreference("sound", "rain");
   return singleMix(saved === "stream" || saved === "brown" ? saved : "rain");
@@ -30,7 +30,9 @@ export function useRelaxationSession() {
   const [, refresh] = useReducer(n => n + 1, 0);
   const [starting, setStarting] = useState(false),
     [error, setError] = useState(""),
-    [mixError, setMixError] = useState("");
+    [mixError, setMixError] = useState(""),
+    [audioNotice, setAudioNotice] = useState(""),
+    [noticeVisible, setNoticeVisible] = useState(false);
   const audio = useRef<AudioEngine | null>(null),
     mounted = useRef(true),
     operation = useRef(0),
@@ -62,6 +64,12 @@ export function useRelaxationSession() {
   useEffect(() => {
     writePreference("fade-seconds", String(timer.fadeSeconds));
   }, [timer.fadeSeconds]);
+  useEffect(() => {
+    if (!audioNotice) return;
+    setNoticeVisible(true);
+    const timeout = setTimeout(() => setNoticeVisible(false), 5500);
+    return () => clearTimeout(timeout);
+  }, [audioNotice]);
   function envelope() {
     if (timer.running) audio.current?.envelope(latestVolume.current, timer.remaining, timer.windowMs, timer.recoveryMs, timer.fade);
   }
@@ -75,16 +83,17 @@ export function useRelaxationSession() {
   function toggleMute() {
     setVolume(latestVolume.current > 0 ? 0 : lastVolume.current);
   }
-  function setMix(value: MixConfig, transition = .15) {
+  function setMix(value: MixConfig, transition = .15, retry?: SoundId) {
     if (!validMix(value)) return;
     const next = copyMix(value),
       request = ++mixOperation.current;
     latestMix.current = next;
     updateMix(next);
     setMixError("");
-    if (!timer.running || !audio.current) return;
+    if (retry || (!timer.running && !pending.current)) setAudioNotice("");
+    if ((!timer.running && !pending.current) || !audio.current) return;
     const engine = audio.current;
-    void engine.setMix(next, transition).catch(() => {
+    void engine.setMix(next, transition, retry).catch(() => {
       if (!mounted.current || request !== mixOperation.current || audio.current !== engine || !timer.running) return;
       latestMix.current = engine.currentMix;
       updateMix(engine.currentMix);
@@ -92,7 +101,7 @@ export function useRelaxationSession() {
     });
   }
   function setSound(sound: SoundId) {
-    setMix(singleMix(sound, latestMix.current), .8);
+    setMix(singleMix(sound, latestMix.current), .8, sound);
   }
   function pause() {
     operation.current++;
@@ -114,13 +123,20 @@ export function useRelaxationSession() {
     setStarting(true);
     setError("");
     setMixError("");
+    setAudioNotice("");
     try {
-      const engine = audio.current ??= new AudioEngine();
+      const engine = audio.current ??= new AudioEngine((missing, usingRain) => {
+        if (!mounted.current) return;
+        const labels = sounds.filter(sound => missing.some(id => id === sound.id)).map(sound => sound.label);
+        setAudioNotice(labels.length
+          ? `Chưa phát được ${labels.join(", ")}. ${usingRain ? "Đang phát Mưa nhẹ tổng hợp." : "Các âm còn lại vẫn đang phát."}`
+          : "");
+      });
       let requested = copyMix(latestMix.current);
-      await engine.start(requested);
-      while (mounted.current && token === operation.current && mixKey(latestMix.current) !== mixKey(requested)) {
+      let committed = await engine.start(requested);
+      while (mounted.current && token === operation.current && (!committed || mixKey(latestMix.current) !== mixKey(requested))) {
         requested = copyMix(latestMix.current);
-        await engine.setMix(requested, .8);
+        committed = await engine.setMix(requested, .8);
       }
       if (!mounted.current || token !== operation.current || audio.current !== engine) return;
       timer.start();
@@ -201,6 +217,7 @@ export function useRelaxationSession() {
     writePreference("last-volume", String(config.lastVolume));
     setError("");
     setMixError("");
+    setAudioNotice("");
     refresh();
   }
   const activeSounds = enabledSounds(mix),
@@ -224,6 +241,8 @@ export function useRelaxationSession() {
     ended: timer.ended,
     error,
     mixError,
+    audioNotice,
+    noticeVisible: !!audioNotice && noticeVisible,
     fade: timer.fade,
     fadeSeconds: timer.fadeSeconds,
     changeFade,

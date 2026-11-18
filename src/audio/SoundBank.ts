@@ -1,4 +1,4 @@
-import type { SoundId } from "../types";
+import type { SynthSoundId } from "../types";
 import {
   synthesizePreset,
   type RenderedSound,
@@ -12,7 +12,7 @@ const cancelled = () => new Error("Sound preparation cancelled");
 /** At most one buffer per preset, owned by one audio context. No PCM copies are
  * retained after converting transferred worker arrays to AudioBuffer. */
 export class SoundBank {
-  private buffers = new Map<SoundId, Promise<AudioBuffer>>();
+  private buffers = new Map<SynthSoundId, Promise<AudioBuffer>>();
   private jobs = new Map<number, Job>();
   private worker?: Worker;
   private workerUrl?: string;
@@ -35,7 +35,7 @@ export class SoundBank {
       disposed: this.disposed,
     };
   }
-  get(sound: SoundId): Promise<AudioBuffer> {
+  get(sound: SynthSoundId): Promise<AudioBuffer> {
     if (this.disposed) return Promise.reject(cancelled());
     const cached = this.buffers.get(sound);
     if (cached) return cached;

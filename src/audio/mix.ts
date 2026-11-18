@@ -1,8 +1,9 @@
 import { SOUND_IDS, type MixConfig } from "../session/config";
-export type Levels = [number, number, number];
+export type Levels = number[];
 export function normalizeLevels(levels: number[]): Levels {
-  const divisor = Math.max(1, Math.hypot(...levels));
-  return levels.map(level => level / divisor) as Levels;
+  const peakSum = levels.reduce((sum, level) => sum + Math.abs(level), 0);
+  const divisor = Math.max(1, Math.hypot(...levels), peakSum / Math.sqrt(3));
+  return levels.map(level => level / divisor);
 }
 export const mixLevels = (mix: MixConfig): Levels => normalizeLevels(SOUND_IDS.map(id => mix[id].enabled ? mix[id].level : 0));
 export type MixCurve = {

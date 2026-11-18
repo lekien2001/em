@@ -1,10 +1,11 @@
 import { AudioEngine } from "../../src/audio/AudioEngine";
+import { sounds } from "../../src/audio/catalog";
 import { SoundBank } from "../../src/audio/SoundBank";
 import { synthesizePreset } from "../../src/audio/synthesis";
 import { createVoice, fadeVoice } from "../../src/audio/voice";
 import { sampleMix, type MixCurve } from "../../src/audio/mix";
-import type { MixConfig } from "../../src/session/config";
-import type { SoundId } from "../../src/types";
+import { restoreMix } from "../../src/session/config";
+import type { SoundId, SynthSoundId } from "../../src/types";
 const engine = new AudioEngine();
 let starting = false,
   error = "";
@@ -21,12 +22,17 @@ const api = {
       starting = false;
     }
   },
-  mix: (config: MixConfig) => engine.setMix(config),
+  mix: (config: unknown) => {
+    const mix = restoreMix(config);
+    if (!mix) throw new Error("Invalid test mix");
+    return engine.setMix(mix);
+  },
   select: (sound: SoundId) => engine.select(sound),
   pause: () => engine.pause(),
+  fade: (remaining: number) => engine.envelope(.45, remaining),
   dispose: () => engine.dispose(),
   stats: () => ({ ...engine.diagnostics, starting, error }),
-  async parity(sound: SoundId, sampleRate: number, seed: number) {
+  async parity(sound: SynthSoundId, sampleRate: number, seed: number) {
     const context = new OfflineAudioContext(2, 1, sampleRate),
       bank = new SoundBank(context, seed);
     try {
@@ -132,7 +138,7 @@ const api = {
   },
 };
 Object.assign(window, { __audioTest: api });
-for (const sound of ["rain", "stream", "brown"] as const) {
+for (const { id: sound } of sounds) {
   const button = document.createElement("button");
   button.textContent = "Start " + sound;
   button.onclick = () => {

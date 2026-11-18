@@ -1,4 +1,6 @@
-export type SoundId = "rain" | "stream" | "brown";
+export type SynthSoundId = "rain" | "stream" | "brown";
+export type RecordingId = "rain-window" | "mouth-asmr" | "lego-asmr";
+export type SoundId = SynthSoundId | RecordingId;
 export type SheepSpeed = "slow" | "medium";
 export type Quality = "low" | "balanced" | "high";
 /** Integer 1–720, or 0 for unlimited. Validate at configuration boundaries. */

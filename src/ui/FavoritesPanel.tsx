@@ -12,7 +12,7 @@ export function FavoritesPanel({ favorites, current, apply, back }: {
   favorites: ReturnType<typeof useFavorites>;
   current(): FavoriteConfig;
   apply(favorite: Favorite): void;
-  back(): void;
+  back?(): void;
 }) {
   const [name, setName] = useState(""), [error, setError] = useState(""), [message, setMessage] = useState("");
   const [editing, setEditing] = useState<string | null>(null), [draft, setDraft] = useState(""), [deleting, setDeleting] = useState<string | null>(null);
@@ -30,7 +30,7 @@ export function FavoritesPanel({ favorites, current, apply, back }: {
   });
 
   return <div className="favorites-panel">
-    <button className="panel-back" aria-label="Quay lại Tùy chọn" onClick={back}><ChevronDown size={16} className="back-chevron" /><span>Tùy chọn</span></button>
+    {back && <button className="panel-back" aria-label="Quay lại Tùy chọn" onClick={back}><ChevronDown size={16} className="back-chevron" /><span>Tùy chọn</span></button>}
     <p className="popover-note">Áp dụng sẽ tạm dừng, đưa cừu và đồng hồ về đầu phiên. Góc nhìn và ảnh mặt được giữ nguyên.</p>
     <form noValidate onSubmit={event => {
       event.preventDefault();

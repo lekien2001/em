@@ -3,9 +3,11 @@ import { formatRemaining } from "../session/config";
 import type { RelaxationSession } from "../session/useRelaxationSession";
 import { Check } from "./icons";
 export function TimerControls({
-  session
+  session,
+  showPresetCheck = true,
 }: {
   session: RelaxationSession;
+  showPresetCheck?: boolean;
 }) {
   const [custom, setCustom] = useState(""),
     [error, setError] = useState("");
@@ -14,7 +16,7 @@ export function TimerControls({
     <div className="compact-timers">{([15, 30, 60, 0] as const).map(minutes => <button key={minutes} aria-pressed={session.duration === minutes} onClick={() => {
         session.changeDuration(minutes);
         setError("");
-      }}><span>{minutes ? `${minutes} phút` : "Không giới hạn"}</span>{session.duration === minutes && <Check size={16} />}</button>)}</div>
+      }}><span>{minutes ? `${minutes} phút` : "Không giới hạn"}</span>{showPresetCheck && session.duration === minutes && <Check size={16} />}</button>)}</div>
     <form className="custom-timer" noValidate onSubmit={event => {
       event.preventDefault();
       const minutes = Number(custom);

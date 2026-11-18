@@ -1,6 +1,6 @@
-import type { SoundId } from "../types";
+import type { SynthSoundId } from "../types";
 export type SynthesisRequest = {
-  sound: SoundId;
+  sound: SynthSoundId;
   sampleRate: number;
   seed: number;
 };

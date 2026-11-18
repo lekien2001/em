@@ -1,5 +1,9 @@
 import { createIcon as _A } from "../ui/iconFactory";
 import { IconNode } from "./iconFactory";
+export const ArrowLeft = _A("arrow-left", [
+  ["path", { d: "m12 19-7-7 7-7", key: "arrowhead" }],
+  ["path", { d: "M19 12H5", key: "shaft" }],
+]);
 export const AF: IconNode = [
   [
     "path",

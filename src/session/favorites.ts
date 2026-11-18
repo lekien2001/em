@@ -1,4 +1,4 @@
-import { validFavoriteConfig, type FavoriteConfig } from "./config";
+import { restoreMix, validFavoriteConfig, type FavoriteConfig } from "./config";
 export type Favorite = {
   id: string;
   name: string;
@@ -22,9 +22,18 @@ export function readFavorites(): {
       warning: ""
     };
     const data = JSON.parse(raw);
-    if (data?.version !== 1 || !Array.isArray(data.entries) || data.entries.length > 10 || !data.entries.every((e: Favorite, i: number, all: Favorite[]) => e && typeof e.id === "string" && e.id && !all.slice(0, i).some(x => x.id === e.id) && typeof e.name === "string" && !validateName(e.name, all.slice(0, i)) && e.name === e.name.trim() && validFavoriteConfig(e.config))) throw new Error("Invalid favorites");
+    if (data?.version !== 1 || !Array.isArray(data.entries) || data.entries.length > 10) throw new Error("Invalid favorites");
+    const entries: Favorite[] = [];
+    for (const entry of data.entries) {
+      const mix = restoreMix(entry?.config?.mix);
+      const config = { ...entry?.config, mix };
+      if (typeof entry?.id !== "string" || !entry.id || entries.some(saved => saved.id === entry.id) ||
+          typeof entry.name !== "string" || entry.name !== entry.name.trim() || validateName(entry.name, entries) ||
+          !validFavoriteConfig(config)) throw new Error("Invalid favorites");
+      entries.push({ id: entry.id, name: entry.name, config });
+    }
     return {
-      entries: data.entries,
+      entries,
       warning: ""
     };
   } catch {

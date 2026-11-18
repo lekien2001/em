@@ -45,5 +45,6 @@ export function SoundPicker({
         })}<p className="popover-note">Giữ ít nhất một âm thanh. Âm lượng tổng điều chỉnh toàn bộ bản phối.</p></div>}
     </div>
     {session.mixError && <p className="form-error" role="alert">{session.mixError}</p>}
+    {session.audioNotice && !session.mixError && <p className="popover-note" role="status">{session.audioNotice}</p>}
   </div>;
 }
