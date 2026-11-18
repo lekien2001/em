@@ -118,6 +118,18 @@ test("Canvas: uniform fit, alpha feather, asymmetric orientation, invalid files 
     }));
     const canvas = api.exportFace(source, api.initialCrop()),
       x = canvas.getContext("2d")!;
+    const preview = api.createFaceSurface("preview");
+    const sampleCrop = { x: 33, y: -41, zoom: 1.3, rotation: 12 };
+    preview.paint(source, api.initialCrop());
+    preview.paint(source, sampleCrop);
+    const full = api.exportFace(source, sampleCrop);
+    const previewContext = preview.canvas.getContext("2d")!;
+    const fullContext = full.getContext("2d")!;
+    const differences = [[0, 0], [192, 256], [110, 195], [257, 320]].map(([u, v]) => {
+      const a = previewContext.getImageData(u, v, 1, 1).data;
+      const b = fullContext.getImageData(u * 2, v * 2, 1, 1).data;
+      return Math.max(...Array.from(a, (value, channel) => Math.abs(value - b[channel])));
+    });
     const pixel = (u: number, v: number) => Array.from(x.getImageData(u, v, 1, 1).data);
     const fits = [];
     for (const rotation of [-180, -90, -37, 0, 41, 90, 180]) {
@@ -148,6 +160,8 @@ test("Canvas: uniform fit, alpha feather, asymmetric orientation, invalid files 
     return {
       width: canvas.width,
       height: canvas.height,
+      preview: [preview.canvas.width, preview.canvas.height],
+      differences,
       corner: pixel(0, 0),
       edge: pixel(384, 2),
       middle: pixel(384, 512),
@@ -161,6 +175,8 @@ test("Canvas: uniform fit, alpha feather, asymmetric orientation, invalid files 
     base64: file.buffer.toString("base64")
   });
   expect([result.width, result.height]).toEqual([768, 1024]);
+  expect(result.preview).toEqual([384, 512]);
+  expect(Math.max(...result.differences)).toBeLessThan(5);
   expect(result.corner[3]).toBe(0);
   expect(result.edge[3]).toBeGreaterThan(0);
   expect(result.edge[3]).toBeLessThan(255);
@@ -216,6 +232,11 @@ test("real WebGL: choose, crop, preview, apply to three animated sheep, edit/can
   }).click();
   await expect.poll(() => page.evaluate(() => (window as any).__emQA.world.actors.map((a: any) => a.root.getObjectByName("Personal face")?.visible))).toEqual([true, true, true]);
   const positions = await page.evaluate(() => (window as any).__emQA.world.actors.map((a: any) => a.root.getObjectByName("Personal face").matrixWorld.toArray()));
+  expect(await page.evaluate(() => {
+    const actor = (window as any).__emQA.world.actors[0];
+    const image = actor.root.getObjectByName("Photo surface").material.map.image;
+    return [image.width, image.height];
+  })).toEqual([768, 1024]);
   await page.getByRole("button", {
     name: "Bắt đầu thư giãn",
     exact: true

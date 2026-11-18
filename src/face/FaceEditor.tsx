@@ -58,7 +58,11 @@ export function FaceEditor({
   function apply() {
     if (!source || loading || !ready || !sceneReady) return;
     try {
+      const start = performance.now();
       const output = exportFace(source, crop);
+      if (new URLSearchParams(location.search).get("qa") === "1") {
+        performance.measure("em:face-apply-crop", { start });
+      }
       face.apply(source, crop, output);
       owned.current = null;
       close();

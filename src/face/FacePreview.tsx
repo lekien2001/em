@@ -1,61 +1,123 @@
 import { useEffect, useRef, useState } from "react";
-import { ACESFilmicToneMapping, AmbientLight, DirectionalLight, HemisphereLight, PerspectiveCamera, Scene, SRGBColorSpace, WebGLRenderer } from "three";
+import {
+  ACESFilmicToneMapping, AmbientLight, DirectionalLight, HemisphereLight,
+  PerspectiveCamera, Scene, SRGBColorSpace, WebGLRenderer,
+} from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { AssetLoader } from "../assets/AssetLoader";
 import { disposeObject } from "../assets/dispose";
 import { SheepActor } from "../scene/sheep/SheepActor";
 import { FaceAttachment } from "./FaceAttachment";
-import { exportFace, freeCanvas, type Crop } from "./image";
+import { createFaceSurface, freeCanvas, type Crop } from "./image";
 type Props = {
   source: HTMLCanvasElement | null;
   crop: Crop;
   onReady(ready: boolean): void;
 };
+const PREVIEW_INTERVAL = 1000 / 30;
+
 export function FacePreview(props: Props) {
-  const host = useRef<HTMLDivElement>(null),
-    current = useRef(props);
+  const host = useRef<HTMLDivElement>(null);
+  const current = useRef(props);
   current.current = props;
   const refresh = useRef<(() => void) | undefined>(undefined);
   const [error, setError] = useState("");
+
   useEffect(() => {
-    const element = host.current!,
-      assets = new AssetLoader();
-    let renderer: WebGLRenderer | undefined, actor: SheepActor | undefined, attachment: FaceAttachment | undefined;
-    let controls: OrbitControls | undefined, resize: ResizeObserver | undefined;
-    let output: HTMLCanvasElement | undefined,
-      frame = 0,
-      disposed = false,
-      failed = false,
-      timer: ReturnType<typeof setTimeout> | undefined;
-    const scene = new Scene(),
-      camera = new PerspectiveCamera(32, 1, .05, 30);
-    const render = () => {
+    const element = host.current!;
+    const assets = new AssetLoader();
+    const scene = new Scene();
+    const camera = new PerspectiveCamera(32, 1, .05, 30);
+    const measure = new URLSearchParams(location.search).get("qa") === "1";
+    const openedAt = performance.now();
+    let renderer: WebGLRenderer | undefined;
+    let actor: SheepActor | undefined;
+    let attachment: FaceAttachment | undefined;
+    let controls: OrbitControls | undefined;
+    let resize: ResizeObserver | undefined;
+    let surface: ReturnType<typeof createFaceSurface> | undefined;
+    let compile: Promise<unknown> | undefined;
+    let ready = false;
+    let disposed = false;
+    let failed = false;
+    let dirty = true;
+    let firstFrame = true;
+    let lastPaint = -Infinity;
+    let frame = 0;
+    let timer: number | undefined;
+
+    const stop = () => {
+      cancelAnimationFrame(frame);
       frame = 0;
-      if (!disposed && !failed && renderer && !document.hidden) renderer.render(scene, camera);
-    };
-    const invalidate = () => {
-      if (!disposed && !failed && !frame) frame = requestAnimationFrame(render);
+      window.clearTimeout(timer);
+      timer = undefined;
     };
     const fail = () => {
-      if (!disposed) {
-        failed = true;
-        setError("Lúc này chưa thể xem trước 3D. Hãy mở bằng trình duyệt có hỗ trợ WebGL.");
-        current.current.onReady(false);
-      }
+      if (disposed) return;
+      failed = true;
+      stop();
+      setError("Lúc này chưa thể xem trước 3D. Hãy mở bằng trình duyệt có hỗ trợ WebGL.");
+      current.current.onReady(false);
     };
     const contextLost = (event: Event) => {
       event.preventDefault();
       fail();
     };
+    const invalidate = () => {
+      if (ready && !disposed && !failed && !document.hidden && !frame) {
+        frame = requestAnimationFrame(render);
+      }
+    };
+    function render() {
+      frame = 0;
+      if (disposed || failed || document.hidden || !renderer) return;
+      const start = performance.now();
+      try {
+        let updated = false;
+        if (dirty && surface && attachment) {
+          if (start - lastPaint >= PREVIEW_INTERVAL) {
+            const { source, crop } = current.current;
+            if (source) surface.paint(source, crop);
+            else surface.clear();
+            attachment.updatePreview(appearance, !!source);
+            dirty = false;
+            updated = true;
+            lastPaint = start;
+            window.clearTimeout(timer);
+            timer = undefined;
+            if (measure) performance.measure("em:face-preview-crop", { start });
+          } else if (timer === undefined) {
+            timer = window.setTimeout(() => {
+              timer = undefined;
+              invalidate();
+            }, PREVIEW_INTERVAL - (start - lastPaint));
+          }
+        }
+        if (!updated && dirty && timer !== undefined) return;
+        const drawAt = performance.now();
+        renderer.render(scene, camera);
+        if (measure) {
+          performance.measure("em:face-preview-render", { start: drawAt });
+          if (firstFrame) performance.measure("em:face-preview-open", { start: openedAt });
+        }
+        firstFrame = false;
+        if (updated) current.current.onReady(true);
+      } catch {
+        fail();
+      }
+    }
+    refresh.current = () => {
+      dirty = true;
+      if (timer === undefined) invalidate();
+    };
+    // The same object identifies the mutable preview texture throughout the editor.
+    let appearance: { canvas: HTMLCanvasElement; revision: number };
+
     try {
-      renderer = new WebGLRenderer({
-        antialias: true,
-        alpha: true
-      });
+      renderer = new WebGLRenderer({ antialias: true, alpha: true });
       renderer.outputColorSpace = SRGBColorSpace;
       renderer.toneMapping = ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.12;
-      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
       const canvas = renderer.domElement;
       canvas.tabIndex = 0;
       canvas.setAttribute("aria-label", "Xem trước mặt cừu 3D. Kéo để xoay.");
@@ -79,12 +141,16 @@ export function FacePreview(props: Props) {
       const fill = new DirectionalLight(0xc1d2ed, .7);
       fill.position.set(3, 2, -2);
       scene.add(fill);
+
+      let previousSize = "";
       const size = () => {
         if (!renderer || disposed) return;
-        const width = element.clientWidth,
-          height = element.clientHeight;
-        if (!width || !height) return;
-        renderer.setSize(width, height);
+        const { clientWidth: width, clientHeight: height } = element;
+        const ratio = Math.min(devicePixelRatio, 2);
+        const key = `${width}:${height}:${ratio}`;
+        if (!width || !height || key === previousSize) return;
+        previousSize = key;
+        renderer.setDrawingBufferSize(width, height, ratio);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
         invalidate();
@@ -92,65 +158,56 @@ export function FacePreview(props: Props) {
       resize = new ResizeObserver(size);
       resize.observe(element);
       size();
-      void assets.model("sheep-model").then(model => {
-        if (disposed) return;
+
+      void assets.model("sheep-model").then(async model => {
+        if (disposed || failed || !renderer) return;
         actor = new SheepActor(model);
         scene.add(actor.root);
         attachment = new FaceAttachment([actor.root]);
-        refresh.current = () => {
-          clearTimeout(timer);
-          timer = setTimeout(() => {
-            if (disposed || failed || !attachment) return;
-            try {
-              const {
-                  source,
-                  crop
-                } = current.current,
-                next = source ? exportFace(source, crop) : undefined;
-              attachment.set(next ? {
-                canvas: next,
-                revision: 0
-              } : null);
-              freeCanvas(output);
-              output = next;
-              invalidate();
-              current.current.onReady(true);
-            } catch {
-              fail();
-            }
-          }, 80);
-        };
-        refresh.current();
+        surface = createFaceSurface("preview");
+        appearance = { canvas: surface.canvas, revision: 0 };
+        // Three compiles invisible meshes too, including the mapped face surface.
+        attachment.updatePreview(appearance, false);
+        compile = renderer.compileAsync(scene, camera);
+        try {
+          await compile;
+        } finally {
+          compile = undefined;
+        }
+        if (disposed || failed) return;
+        ready = true;
+        invalidate();
       }).catch(fail);
     } catch {
       fail();
     }
     const visibility = () => {
-      if (document.hidden) {
-        cancelAnimationFrame(frame);
-        frame = 0;
-      } else invalidate();
+      if (document.hidden) stop();
+      else invalidate();
     };
     document.addEventListener("visibilitychange", visibility);
     return () => {
       disposed = true;
       refresh.current = undefined;
-      clearTimeout(timer);
-      cancelAnimationFrame(frame);
+      stop();
       document.removeEventListener("visibilitychange", visibility);
       resize?.disconnect();
       controls?.dispose();
-      attachment?.dispose();
-      actor?.dispose();
-      disposeObject(scene);
-      assets.dispose();
-      freeCanvas(output);
-      if (renderer) {
-        renderer.domElement.removeEventListener("webglcontextlost", contextLost);
-        renderer.dispose();
-        renderer.forceContextLoss();
-        renderer.domElement.remove();
-      }
+      renderer?.domElement.removeEventListener("webglcontextlost", contextLost);
+      renderer?.domElement.remove();
+      const disposeResources = () => {
+        attachment?.dispose();
+        actor?.dispose();
+        disposeObject(scene);
+        assets.dispose();
+        freeCanvas(surface?.canvas);
+        renderer?.dispose();
+        renderer?.forceContextLoss();
+      };
+      // The shader compiler polls renderer properties. Keep those alive until
+      // it settles even if the dialog was dismissed before the first draw.
+      if (compile) void compile.then(disposeResources, disposeResources);
+      else disposeResources();
     };
   }, []);
   useEffect(() => {

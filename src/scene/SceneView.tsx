@@ -26,7 +26,7 @@ export function SceneView(props: SceneProps) {
   }, []);
   useEffect(
     () => renderer.current?.sync(),
-    [props.playing, props.reduced, props.speed],
+    [props.playing, props.reduced, props.speed, props.editorOpen],
   );
   useEffect(() => renderer.current?.home(), [props.reset]);
   useEffect(() => renderer.current?.setFace(props.face ?? null), [props.face]);

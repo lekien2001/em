@@ -7,6 +7,7 @@ export type FadeSeconds = 15 | 60 | 180;
 export type FaceAppearance = { readonly canvas: HTMLCanvasElement; readonly revision: number };
 export type SceneProps = {
   playing: boolean;
+  editorOpen?: boolean;
   reduced: boolean;
   speed: SheepSpeed;
   reset: number;

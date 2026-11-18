@@ -102,34 +102,73 @@ export function paintPhoto(context: CanvasRenderingContext2D, source: HTMLCanvas
   context.drawImage(source, -source.width / 2, -source.height / 2);
   context.restore();
 }
-export function exportFace(source: HTMLCanvasElement, crop: Crop): HTMLCanvasElement {
-  const output = document.createElement("canvas");
-  output.width = PHOTO.width;
-  output.height = PHOTO.height;
-  const context = output.getContext("2d");
-  if (!context) throw new Error("Không thể tạo ảnh mặt. Hãy thử lại.");
-  paintPhoto(context, source, crop);
+export const PREVIEW_PHOTO = { width: 384, height: 512 } as const;
+
+type PhotoSize = "preview" | "full";
+// Two shared masks contain only the reusable ellipse, never user pixels.
+const masks = new Map<PhotoSize, HTMLCanvasElement>();
+
+function faceMask(size: PhotoSize) {
+  const cached = masks.get(size);
+  if (cached) return cached;
+
+  const { width, height } = size === "preview" ? PREVIEW_PHOTO : PHOTO;
   const mask = document.createElement("canvas");
-  mask.width = output.width;
-  mask.height = output.height;
-  const mc = mask.getContext("2d")!;
-  // An inward feather keeps every pixel outside the ellipse completely clear.
-  const image = mc.createImageData(mask.width, mask.height);
-  for (let y = 0; y < mask.height; y++) for (let x = 0; x < mask.width; x++) {
-    const u = (x + .5 - mask.width / 2) / (mask.width / 2),
-      v = (y + .5 - mask.height / 2) / (mask.height / 2);
-    const distance = (1 - Math.hypot(u, v)) * mask.width / 2;
-    const t = Math.max(0, Math.min(1, distance / PHOTO.feather));
-    const at = (y * mask.width + x) * 4;
-    image.data[at] = image.data[at + 1] = image.data[at + 2] = 255;
-    image.data[at + 3] = Math.round(255 * t * t * (3 - 2 * t));
+  mask.width = width;
+  mask.height = height;
+  const context = mask.getContext("2d");
+  if (!context) throw new Error("Không thể tạo mặt nạ ảnh.");
+  const image = context.createImageData(width, height);
+  const innerRadius = 1 - 2 * PHOTO.feather / PHOTO.width;
+  const innerRadiusSquared = innerRadius * innerRadius;
+  for (let y = 0; y < height; y++) {
+    const v = (y + 0.5 - height / 2) / (height / 2);
+    const vSquared = v * v;
+    for (let x = 0; x < width; x++) {
+      const u = (x + 0.5 - width / 2) / (width / 2);
+      const radiusSquared = u * u + vSquared;
+      if (radiusSquared >= 1) continue;
+      // Only alpha matters for destination-in.
+      const alpha = (y * width + x) * 4 + 3;
+      if (radiusSquared <= innerRadiusSquared) {
+        image.data[alpha] = 255;
+      } else {
+        const t = (1 - Math.sqrt(radiusSquared)) / (1 - innerRadius);
+        image.data[alpha] = Math.round(255 * t * t * (3 - 2 * t));
+      }
+    }
   }
-  mc.putImageData(image, 0, 0);
-  context.globalCompositeOperation = "destination-in";
-  context.drawImage(mask, 0, 0);
-  context.globalCompositeOperation = "source-over";
-  mask.width = mask.height = 0;
-  return output;
+  context.putImageData(image, 0, 0);
+  masks.set(size, mask);
+  return mask;
+}
+
+export function createFaceSurface(size: PhotoSize) {
+  const mask = faceMask(size);
+  const canvas = document.createElement("canvas");
+  canvas.width = mask.width;
+  canvas.height = mask.height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Không thể tạo ảnh mặt. Hãy thử lại.");
+  return {
+    canvas,
+    clear() {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+    },
+    paint(source: HTMLCanvasElement, crop: Crop) {
+      paintPhoto(context, source, crop, canvas.width, canvas.height);
+      context.save();
+      context.globalCompositeOperation = "destination-in";
+      context.drawImage(mask, 0, 0);
+      context.restore();
+    },
+  };
+}
+
+export function exportFace(source: HTMLCanvasElement, crop: Crop): HTMLCanvasElement {
+  const surface = createFaceSurface("full");
+  surface.paint(source, crop);
+  return surface.canvas;
 }
 export function freeCanvas(canvas?: HTMLCanvasElement | null) {
   if (canvas) canvas.width = canvas.height = 0;

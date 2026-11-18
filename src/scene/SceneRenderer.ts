@@ -20,6 +20,7 @@ import { disposeObject } from "../assets/dispose";
 import type { FaceAppearance, SceneProps } from "../types";
 import { CAMERA_LIMITS, MAIN_CAMERA } from "./camera";
 import { FrameMonitor } from "./FrameMonitor";
+import { benchmarkRender, renderExperiment } from "./renderBenchmark";
 import { QualityController } from "./quality";
 import { cacheStaticShadows } from "./shadows";
 import { ease, SceneClock, sheepPose } from "./sheep/timeline";
@@ -116,6 +117,7 @@ export function createSceneRenderer(
   orbit.maxDistance = CAMERA_LIMITS.maxDistance;
   orbit.minPolarAngle = CAMERA_LIMITS.minPolarAngle;
   orbit.maxPolarAngle = CAMERA_LIMITS.maxPolarAngle;
+  const experiment = renderExperiment(location.search);
   let disposed = false,
     contextLost = false,
     world: RenderWorld | undefined,
@@ -127,11 +129,30 @@ export function createSceneRenderer(
     ready = false,
     dragging = false,
     shadowPhase = NaN,
+    lastShadowAt = -Infinity,
+    shadowUpdates = 0,
     shadowCache: ShadowCache | undefined,
-    frameMonitor = new FrameMonitor();
+    frameMonitor = new FrameMonitor(experiment.enabled ? 3600 : 900);
   Object.assign(host, {
     emFrameSamples: frameMonitor.samples,
   });
+  if (experiment.enabled) {
+    host.dataset.renderMode = experiment.mode;
+    Object.assign(host, {
+      async emRenderBenchmark() {
+        const viewport = readViewport();
+        const dpr = devicePixelRatio;
+        const cameraPosition = camera.position.clone();
+        const cameraTarget = orbit.target.clone();
+        const result = await benchmarkRender(frameMonitor.samples, experiment.mode,
+          () => ready && getProps().playing && !getProps().editorOpen && !document.hidden &&
+            !disposed && !contextLost && !dragging && !cameraTransition && resizeTimer === undefined &&
+            sameViewport(viewport, readViewport()) && devicePixelRatio === dpr &&
+            camera.position.equals(cameraPosition) && orbit.target.equals(cameraTarget));
+        return { ...result, viewport, dpr, buffer: [canvas.width, canvas.height] };
+      },
+    });
+  }
   let cameraTransition: CameraTransition | undefined,
     assets = new AssetLoader(),
     clock = new SceneClock(performance.now()),
@@ -152,11 +173,13 @@ export function createSceneRenderer(
     !disposed &&
       !contextLost &&
       !document.hidden &&
+      !getProps().editorOpen &&
       resizeTimer === undefined &&
       !frameRequest &&
       (frameRequest = requestAnimationFrame(frame));
   }
   function resetCamera(kA = false) {
+    shadowPhase = NaN;
     let nA =
       host.clientWidth / host.clientHeight < 0.8
         ? {
@@ -183,7 +206,7 @@ export function createSceneRenderer(
     const height = host.clientHeight;
     if (!width || !height) return;
     const ratioLimit = quality.value === "low" ? 0.8 : quality.value === "balanced" ? (width < 700 ? 1 : 1.25) : 1.6;
-    return { width, height, pixelRatio: Math.min(devicePixelRatio, ratioLimit) };
+    return { width, height, pixelRatio: Math.min(devicePixelRatio, ratioLimit) * experiment.scale };
   }
 
   function applyViewport(size: ViewportSize | undefined) {
@@ -205,7 +228,7 @@ export function createSceneRenderer(
   }
 
   function queueResize() {
-    if (disposed || contextLost || document.hidden) return;
+    if (disposed || contextLost || document.hidden || getProps().editorOpen) return;
     const size = readViewport();
     if (!size || sameViewport(resizeTimer === undefined ? appliedViewport : pendingViewport, size)) return;
     pendingViewport = size;
@@ -216,7 +239,7 @@ export function createSceneRenderer(
     window.clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(() => {
       cancelResize();
-      if (disposed || contextLost || document.hidden) return;
+      if (disposed || contextLost || document.hidden || getProps().editorOpen) return;
       applyViewport(readViewport());
       firstFrameAfterResize = true;
       previousFrameAt = performance.now();
@@ -259,12 +282,20 @@ export function createSceneRenderer(
         rate(),
       ),
     );
-    scheduleFrame();
+    if (getProps().editorOpen) {
+      cancelResize();
+      if (frameRequest) cancelAnimationFrame(frameRequest);
+      frameRequest = 0;
+    } else {
+      queueResize();
+      scheduleFrame();
+    }
+    if (experiment.enabled) host.dataset.sceneObscured = String(!!getProps().editorOpen);
   }
   function frame(kA: number) {
     let nA = performance.now();
     frameRequest = 0;
-    if (disposed || contextLost || document.hidden || resizeTimer !== undefined || !world || !ready) return;
+    if (disposed || contextLost || document.hidden || getProps().editorOpen || resizeTimer !== undefined || !world || !ready) return;
     let q = clock.sample(nA);
     reportCrossings(q);
     let m = Math.max(0, q.phase - previousPhase);
@@ -306,14 +337,21 @@ export function createSceneRenderer(
     camera.lookAt(orbit.target);
     world.update(q.phase, AA.reduced, camera, q.activeSeconds);
     let Z = nA - previousFrameAt;
-    shadowCache?.updateActorBounds();
-    let PA = !moonLight.shadow.map || AA.playing || q.phase !== shadowPhase;
+    const PA = moonLight.castShadow && (
+      !moonLight.shadow.map || Number.isNaN(shadowPhase) ||
+      (AA.playing ? nA - lastShadowAt >= experiment.shadowInterval : q.phase !== shadowPhase)
+    );
+    if (PA) shadowCache?.updateActorBounds();
     renderer.shadowMap.needsUpdate = PA;
     renderer.info.reset();
     let _ = performance.now();
     renderer.render(scene, camera);
     let DA = performance.now() - _;
-    PA && (shadowPhase = q.phase);
+    if (PA) {
+      shadowPhase = q.phase;
+      lastShadowAt = nA;
+      shadowUpdates++;
+    }
     let wA = dragging
       ? AA.playing
         ? "drag-playing"
@@ -342,6 +380,7 @@ export function createSceneRenderer(
         frameMode: wA,
         staticShadowBakes: String(shadowCache?.bakes || 0),
         dynamicShadowUpdated: String(PA),
+        ...(experiment.enabled && { dynamicShadowUpdates: String(shadowUpdates) }),
         drawCalls: String(renderer.info.render.calls),
         triangles: String(renderer.info.render.triangles),
         grassInstances: String(world.grassInstances),

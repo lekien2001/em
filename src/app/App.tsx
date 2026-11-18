@@ -171,6 +171,7 @@ export function App() {
       >
         <DL
           playing={session.playing}
+          editorOpen={panel === "face"}
           reduced={reduced}
           speed={speed}
           reset={reset}

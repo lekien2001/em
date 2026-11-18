@@ -54,9 +54,10 @@ test("WebGL applies one settled resize, tracks DPR and resumes the same playing 
   await page.setViewportSize({ width: 860, height: 540 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.clock.install();
-  await page.goto("/?qa=1");
+  await page.goto("/?qa=1&render=both");
   const host = page.locator(".canvas-host");
   await expect(host).toHaveAttribute("data-model-source", "/assets/sheep.glb", { timeout: 90000 });
+  await expect(host).toHaveAttribute("data-render-mode", "both");
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
   const cdp = await page.context().newCDPSession(page);
   const setMetrics = (width: number, height: number, deviceScaleFactor = 1) =>
@@ -81,6 +82,7 @@ test("WebGL applies one settled resize, tracks DPR and resumes the same playing 
     };
   });
   const baseline = await stats();
+  expect(baseline.width).toBe(774);
   for (let step = 1; step <= 15; step++) {
     await setMetrics(860 + step * 4, 540 - step * 4);
     await expect.poll(async () => (await stats()).cssWidth).toBe(860 + step * 4);
@@ -91,14 +93,14 @@ test("WebGL applies one settled resize, tracks DPR and resumes the same playing 
   }
   expect(await stats()).toMatchObject({ cssWidth: 920, cssHeight: 480, width: baseline.width, frames: baseline.frames, bufferUpdates: 0 });
   await page.clock.runFor(200);
-  expect(await stats()).toMatchObject({ width: 920, height: 480, frames: baseline.frames + 1, phase: baseline.phase, bufferUpdates: 1 });
+  expect(await stats()).toMatchObject({ width: 828, height: 432, frames: baseline.frames + 1, phase: baseline.phase, bufferUpdates: 1 });
   await page.clock.resume();
   await page.waitForTimeout(350);
   expect((await stats()).frames).toBe(baseline.frames + 1);
 
   await setMetrics(920, 480, 1.25);
   await expect.poll(() => page.evaluate(() => devicePixelRatio)).toBe(1.25);
-  await expect.poll(stats).toMatchObject({ width: 1150, height: 600, frames: baseline.frames + 2, bufferUpdates: 2 });
+  await expect.poll(stats).toMatchObject({ width: 1035, height: 540, frames: baseline.frames + 2, bufferUpdates: 2 });
 
   const options = page.getByRole("button", { name: "Tùy chọn", exact: true });
   await options.press("Enter");
@@ -118,11 +120,20 @@ test("WebGL applies one settled resize, tracks DPR and resumes the same playing 
   await page.clock.fastForward(500);
   await page.clock.runFor(35);
   const settled = await stats();
-  expect(settled).toMatchObject({ width: 1125, height: 531, playing: "true", bufferUpdates: started.bufferUpdates + 1 });
+  expect(settled).toMatchObject({ width: 1012, height: 478, playing: "true", bufferUpdates: started.bufferUpdates + 1 });
   expect(settled.activeSeconds).toBeGreaterThanOrEqual(started.activeSeconds + 0.5);
   expect(settled.remaining).toBeLessThan(started.remaining);
   expect(settled.remaining).toBeGreaterThan(0);
   await expect(page.getByRole("dialog")).toHaveAttribute("data-side", "above");
+  await page.getByRole("button", { name: "Mặt cừu của bạn", exact: true }).press("Enter");
+  await expect(host).toHaveAttribute("data-scene-obscured", "true");
+  const beforeEditor = await stats();
+  await page.clock.fastForward(2500);
+  const inEditor = await stats();
+  expect(inEditor).toMatchObject({ frames: beforeEditor.frames, activeSeconds: beforeEditor.activeSeconds, playing: "true" });
+  expect(inEditor.remaining).toBeLessThan(beforeEditor.remaining - 2000);
   await page.keyboard.press("Escape");
   await expect(options).toBeFocused();
+  await page.clock.runFor(35);
+  expect((await stats()).activeSeconds).toBeGreaterThanOrEqual(beforeEditor.activeSeconds + 2.5);
 });

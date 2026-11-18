@@ -2022,6 +2022,9 @@ button:active {
 .face-actions .face-apply { margin-left: auto; background: #c6b4df; color: #1b2431; }
 .face-error { color: #f0c0bd; font-size: 13px; line-height: 1.6; }
 .scene-options .face-open { gap: 10px; }
+@media (min-width: 701px) and (max-height: 500px) and (pointer: coarse) {
+  .face-actions { position: sticky; bottom: -24px; padding: 12px 0; background: #182b34; }
+}
 @media (max-width: 700px) {
   .modal-backdrop.face-editor-backdrop { padding: 12px; }
   .face-dialog.modal { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 18px; }

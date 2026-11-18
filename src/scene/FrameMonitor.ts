@@ -1,6 +1,7 @@
 import type { FrameSample } from "../types";
 export class FrameMonitor {
   samples: FrameSample[] = [];
+  constructor(private capacity = 900) {}
   previous:
     | {
         mode: string;
@@ -23,7 +24,7 @@ export class FrameMonitor {
           drawCalls: E,
           triangles: e,
         }),
-        this.samples.length > 900 && this.samples.shift());
+        this.samples.length > this.capacity && this.samples.shift());
     }
     this.previous = {
       mode: A,

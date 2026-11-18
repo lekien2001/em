@@ -51,8 +51,10 @@ export function CropCanvas({
     const element = canvas.current!,
       context = element.getContext("2d")!;
     const dpr = Math.min(devicePixelRatio || 1, 2);
-    element.width = 300 * dpr;
-    element.height = 400 * dpr;
+    const width = Math.floor(300 * dpr);
+    const height = Math.floor(400 * dpr);
+    if (element.width !== width) element.width = width;
+    if (element.height !== height) element.height = height;
     paintPhoto(context, source, crop, element.width, element.height);
     context.save();
     context.scale(element.width / PHOTO.width, element.height / PHOTO.height);

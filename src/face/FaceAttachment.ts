@@ -125,6 +125,7 @@ export class FaceAttachment {
   private texture?: CanvasTexture;
   private applied: FaceAppearance | null = null;
   private disposed = false;
+  private visible = false;
   constructor(roots: Object3D[]) {
     const first = roots[0],
       head = first.getObjectByName(C.head);
@@ -210,9 +211,23 @@ export class FaceAttachment {
     this.material.needsUpdate = true;
     this.texture && release(this.texture);
     this.texture = next;
-    this.bindings.forEach(b => b.mesh.geometry = face ? b.filtered : b.original);
-    this.groups.forEach(g => g.visible = !!face);
+    this.show(!!face);
     this.applied = face;
+  }
+  /** Keep a single texture and shader variant while editing the same canvas. */
+  updatePreview(face: FaceAppearance, hasPhoto: boolean) {
+    if (this.disposed) return;
+    if (this.applied !== face) this.set(face);
+    if (hasPhoto && this.texture) this.texture.needsUpdate = true;
+    this.show(hasPhoto);
+  }
+  private show(visible: boolean) {
+    if (this.visible === visible) return;
+    this.visible = visible;
+    this.bindings.forEach(binding => {
+      binding.mesh.geometry = visible ? binding.filtered : binding.original;
+    });
+    this.groups.forEach(group => { group.visible = visible; });
   }
   dispose() {
     if (this.disposed) return;
