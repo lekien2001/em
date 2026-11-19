@@ -3,6 +3,7 @@ import { AssetLoader } from "../../src/assets/AssetLoader";
 import { disposeObject } from "../../src/assets/dispose";
 import { FaceAttachment } from "../../src/face/FaceAttachment";
 import { exportFace, initialCrop } from "../../src/face/image";
+import { SHEEP_FACE_STYLES } from "../../src/face/sheepPresets";
 import { SheepActor } from "../../src/scene/sheep/SheepActor";
 const renderer = new WebGLRenderer({
   antialias: true,
@@ -31,7 +32,7 @@ const watch = (object: any) => {
     object.addEventListener("dispose", () => resources.set(object, resources.get(object)! + 1));
   }
 };
-let face: FaceAttachment | undefined;
+const face = new FaceAttachment([actor.root], [SHEEP_FACE_STYLES[0]]);
 const view = (angle = 0) => {
   camera.position.set(Math.sin(angle) * 3.2, 1.55, .81 + Math.cos(angle) * 3.2);
   camera.lookAt(0, 1.47, .81);
@@ -50,7 +51,6 @@ const api = {
     context.fillStyle = "#e53b9a";
     context.fillRect(0, 0, 768, 1024);
     const output = exportFace(source, initialCrop());
-    face ??= new FaceAttachment([actor.root]);
     face.set({
       canvas: output,
       revision: 0
@@ -68,7 +68,7 @@ const api = {
     };
   },
   restore() {
-    face?.set(null);
+    face.set(null);
     view();
     return {
       ...renderer.info.memory
@@ -94,7 +94,7 @@ const api = {
     };
   },
   dispose() {
-    face?.dispose();
+    face.dispose();
     actor.dispose();
     disposeObject(scene);
     assets.dispose();

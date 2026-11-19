@@ -8,6 +8,7 @@ import { AssetLoader } from "../assets/AssetLoader";
 import { disposeObject } from "../assets/dispose";
 import { SheepActor } from "../scene/sheep/SheepActor";
 import { FaceAttachment } from "./FaceAttachment";
+import { SHEEP_FACE_STYLES } from "./sheepPresets";
 import { createFaceSurface, freeCanvas, type Crop } from "./image";
 type Props = {
   source: HTMLCanvasElement | null;
@@ -163,7 +164,7 @@ export function FacePreview(props: Props) {
         if (disposed || failed || !renderer) return;
         actor = new SheepActor(model);
         scene.add(actor.root);
-        attachment = new FaceAttachment([actor.root]);
+        attachment = new FaceAttachment([actor.root], [SHEEP_FACE_STYLES[0]]);
         surface = createFaceSurface("preview");
         appearance = { canvas: surface.canvas, revision: 0 };
         // Three compiles invisible meshes too, including the mapped face surface.

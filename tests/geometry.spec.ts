@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test';
 import {Raycaster,Vector3} from 'three';
 import fs from 'node:fs';
 import {api} from './support/scene-api';
+import {FaceAttachment} from '../src/face/FaceAttachment';
 import {prepareControllers,type Actor,type Adapters} from '../src/scene/sheep/natural';
 const a:Adapters={...api,getPose:api.sheepPose,getAge:api.sheepAge,barns:api.BARNS};
 async function actor(){const loader=new api.GLTFLoader();loader.register(()=>({name:'geometry-only-qa',loadTexture:async()=>new api.Texture()}));const b=fs.readFileSync('public/assets/sheep-natural.glb');return new api.SheepActor(await loader.parseAsync(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),''));}
@@ -22,9 +23,10 @@ test('softened barns stay within budget and conceal both ends from every permitt
 
 test('natural rig clears swinging doors and perpendicular fence through a full cycle',async()=>{
  const root=new api.Group(),barns=await api.createBarns(root,{texture:async()=>new api.Texture()}),sheep=await actor(),{controllers}=prepareControllers([sheep],a),point=new api.Vector3(),local=new api.Vector3(),collisions=new Set<string>();
- for(let t=0;t<18;t+=.05){const p=setPose(sheep,t);controllers[0].update(t,t,false);barns.update(t);root.updateMatrixWorld(true);sheep.root.updateMatrixWorld(true);
+ const face=new FaceAttachment([sheep.root],['full-beard']);
+ for(let t=0;t<18;t+=.025){const p=setPose(sheep,t,.025);controllers[0].update(t,t,false);barns.update(t);root.updateMatrixWorld(true);sheep.root.updateMatrixWorld(true);
   const inverses=barns.doors.map((d:any)=>d.matrixWorld.clone().invert());
-  sheep.root.traverse((o:any)=>{if(!o.isSkinnedMesh)return;o.skeleton.update();expect(o.material.opacity).toBe(1);expect(o.material.transparent).toBe(false);
+  sheep.root.traverse((o:any)=>{if(!o.isSkinnedMesh&&!o.name.startsWith('Felt sheep face ·')&&o.name!=='Felt forehead tufts')return;o.skeleton?.update();expect(o.material.opacity).toBe(1);expect(o.material.transparent).toBe(false);
    for(let v=0;v<o.geometry.attributes.position.count;v++){
     o.getVertexPosition(v,point).applyMatrix4(o.matrixWorld);
     if(t<4.8||t>13)for(let d=0;d<inverses.length;d++){local.copy(point).applyMatrix4(inverses[d]);const x=local.x*(d%2===0?1:-1);if(x>.02&&x<1.38&&local.y>.03&&local.y<2.52&&Math.abs(local.z)<.065)collisions.add(`door ${d}, t ${t.toFixed(2)}`);}
@@ -32,7 +34,7 @@ test('natural rig clears swinging doors and perpendicular fence through a full c
    }
   });
  }
- expect([...collisions]).toEqual([]);sheep.dispose();api.disposeObject(root);
+ expect([...collisions]).toEqual([]);face.dispose();sheep.dispose();api.disposeObject(root);
 });
 
 test('root path and velocity stay continuous while landing/takeoff heights are preserved',()=>{

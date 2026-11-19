@@ -27,6 +27,12 @@ export class SheepActor {
   };
   constructor(model: GLTF) {
     this.root = cloneSkeleton(model.scene);
+    for (const [name, side] of [["EarL", 1], ["EarR", -1]] as const) {
+      // Turn the wide original ears forward and down along the cheeks.
+      const ear = this.root.getObjectByName(name);
+      ear?.rotateZ(side * .48);
+      ear?.rotateY(side * .78);
+    }
     this.mixer = new AnimationMixer(this.root);
     const copies = new Map<Material, Material>();
     this.root.traverse((node) => {

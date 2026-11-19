@@ -195,6 +195,12 @@ test("real WebGL: choose, crop, preview, apply to three animated sheep, edit/can
   await expect(page.locator(".canvas-host")).toHaveAttribute("data-model-source", "/assets/sheep.glb", {
     timeout: 90000
   });
+  const defaultFaces = () => page.evaluate(() => (window as any).__emQA.world.actors.map((actor: any) => {
+    const face = actor.root.getObjectByName("Head").children.find((node: any) => node.name.startsWith("Felt sheep face ·"));
+    return face?.visible ? face.name : null;
+  }));
+  const defaultNames = ["Felt sheep face · goatee", "Felt sheep face · curled-moustache", "Felt sheep face · full-beard"];
+  expect(await defaultFaces()).toEqual(defaultNames);
   const file = await portrait(page);
   await openEditor(page);
   await page.getByLabel("Chọn ảnh khuôn mặt").setInputFiles(file);
@@ -231,6 +237,7 @@ test("real WebGL: choose, crop, preview, apply to three animated sheep, edit/can
     exact: true
   }).click();
   await expect.poll(() => page.evaluate(() => (window as any).__emQA.world.actors.map((a: any) => a.root.getObjectByName("Personal face")?.visible))).toEqual([true, true, true]);
+  expect(await defaultFaces()).toEqual([null, null, null]);
   const positions = await page.evaluate(() => (window as any).__emQA.world.actors.map((a: any) => a.root.getObjectByName("Personal face").matrixWorld.toArray()));
   expect(await page.evaluate(() => {
     const actor = (window as any).__emQA.world.actors[0];
@@ -276,7 +283,8 @@ test("real WebGL: choose, crop, preview, apply to three animated sheep, edit/can
     exact: true
   }).click();
   await page.keyboard.press("Escape");
-  await expect.poll(() => page.evaluate(() => (window as any).__emQA.world.actors.every((a: any) => !a.root.getObjectByName("Personal face")))).toBe(true);
+  await expect.poll(defaultFaces).toEqual(defaultNames);
+  expect(await page.evaluate(() => (window as any).__emQA.world.actors.every((a: any) => !a.root.getObjectByName("Personal face")?.visible))).toBe(true);
   await openEditor(page);
   await expect(page.locator(".face-empty")).toBeVisible();
   await page.getByLabel("Chọn ảnh khuôn mặt").setInputFiles(file);

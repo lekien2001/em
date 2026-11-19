@@ -367,9 +367,6 @@ export class NaturalSheep {
       pose = a.getPose(phase, this.index),
       state = this.actor.active;
     this.diagnostics.state = state;
-    // Reset the two additive controls explicitly: the four preserved source clips
-    // animate the original joints and intentionally contain no ear tracks.
-    this.ears.forEach((e) => e.quaternion.identity());
     if (!root.visible) {
       this.diagnostics.headYaw =
         this.diagnostics.earL =
@@ -433,7 +430,7 @@ export class NaturalSheep {
         pulse =
           t < 0.85 ? Math.sin(Math.PI * u) ** 2 * Math.sin(Math.PI * 2 * u) : 0,
         angle = 0.055 * pulse * microWeight * (i === 0 ? 1 : -1);
-      ear.quaternion.setFromAxisAngle(this.v[11].set(0, 1, 0), angle);
+      ear.rotateY(angle);
       if (i === 0) this.diagnostics.earL = angle;
       else this.diagnostics.earR = angle;
     });

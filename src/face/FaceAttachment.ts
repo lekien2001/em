@@ -1,8 +1,9 @@
-import { Bone, BufferGeometry, CanvasTexture, Float32BufferAttribute, FrontSide, Group, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, SkinnedMesh, SphereGeometry, SRGBColorSpace, Vector3, type Object3D, type Material } from "three";
+import { Bone, BufferGeometry, CanvasTexture, Float32BufferAttribute, FrontSide, Group, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, SkinnedMesh, SphereGeometry, SRGBColorSpace, Vector2, Vector3, type Object3D, type Material } from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { release } from "../assets/dispose";
 import type { FaceAppearance } from "../types";
 import { FACE_MODEL as C } from "./modelConfig";
+import { createSheepFaceGeometry, createSheepFringe, type SheepFaceStyle } from "./sheepPresets";
 type Binding = {
   mesh: SkinnedMesh;
   original: BufferGeometry;
@@ -116,6 +117,10 @@ function rimGeometry(toHead: Matrix4) {
  * original geometries are never released here; only this feature's copies are. */
 export class FaceAttachment {
   private groups: Group[] = [];
+  private presets: Mesh[] = [];
+  private presetGeometries = new Map<SheepFaceStyle, BufferGeometry>();
+  private presetMaterial: MeshStandardMaterial;
+  private fringe: BufferGeometry;
   private bindings: Binding[] = [];
   private filtered = new Map<BufferGeometry, BufferGeometry>();
   private geometry: BufferGeometry;
@@ -126,7 +131,8 @@ export class FaceAttachment {
   private applied: FaceAppearance | null = null;
   private disposed = false;
   private visible = false;
-  constructor(roots: Object3D[]) {
+  constructor(roots: Object3D[], styles: readonly SheepFaceStyle[]) {
+    if (styles.length !== roots.length) throw new Error("Số kiểu mặt cừu không khớp mô hình.");
     const first = roots[0],
       head = first.getObjectByName(C.head);
     if (!(head instanceof Bone)) throw new Error("Không tìm thấy xương đầu cừu tương thích.");
@@ -187,7 +193,31 @@ export class FaceAttachment {
     });
     this.wool = wool.clone();
     if (this.wool instanceof MeshStandardMaterial) this.wool.roughness = .95;
-    for (const root of roots) {
+    this.fringe = createSheepFringe(toHead);
+    this.presetMaterial = new MeshStandardMaterial({
+      vertexColors: true,
+      roughness: .9,
+      normalMap: wool instanceof MeshStandardMaterial ? wool.normalMap : null,
+      normalScale: new Vector2(.28, .28),
+    });
+    this.bindings.forEach(binding => { binding.mesh.geometry = binding.filtered; });
+    for (const [index, root] of roots.entries()) {
+      const bone = root.getObjectByName(C.head)!;
+      const style = styles[index];
+      let geometry = this.presetGeometries.get(style);
+      if (!geometry) {
+        geometry = createSheepFaceGeometry(style, toHead);
+        this.presetGeometries.set(style, geometry);
+      }
+      const preset = new Mesh(geometry, this.presetMaterial);
+      preset.name = `Felt sheep face · ${style}`;
+      preset.castShadow = preset.receiveShadow = true;
+      const fringe = new Mesh(this.fringe, this.wool);
+      fringe.name = "Felt forehead tufts";
+      fringe.castShadow = fringe.receiveShadow = true;
+      preset.add(fringe);
+      bone.add(preset);
+      this.presets.push(preset);
       const group = new Group();
       group.name = "Personal face";
       group.visible = false;
@@ -196,7 +226,7 @@ export class FaceAttachment {
       const rim = new Mesh(this.rim, this.wool);
       rim.name = "Felt face rim";
       group.add(face, rim);
-      root.getObjectByName(C.head)!.add(group);
+      bone.add(group);
       this.groups.push(group);
     }
   }
@@ -224,9 +254,7 @@ export class FaceAttachment {
   private show(visible: boolean) {
     if (this.visible === visible) return;
     this.visible = visible;
-    this.bindings.forEach(binding => {
-      binding.mesh.geometry = visible ? binding.filtered : binding.original;
-    });
+    this.presets.forEach(preset => { preset.visible = !visible; });
     this.groups.forEach(group => { group.visible = visible; });
   }
   dispose() {
@@ -235,6 +263,13 @@ export class FaceAttachment {
     this.disposed = true;
     this.groups.forEach(g => g.removeFromParent());
     this.groups.length = 0;
+    this.presets.forEach(preset => preset.removeFromParent());
+    this.presets.length = 0;
+    this.presetGeometries.forEach(release);
+    this.presetGeometries.clear();
+    release(this.presetMaterial);
+    release(this.fringe);
+    this.bindings.forEach(binding => { binding.mesh.geometry = binding.original; });
     this.filtered.forEach(release);
     this.filtered.clear();
     this.bindings.length = 0;
