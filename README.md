@@ -1,6 +1,6 @@
 # Êm
 
-Website thư giãn 3D trên trình duyệt với cừu ra/vào chuồng, nhảy rào, thảm cỏ vải nỉ, âm thanh và hẹn giờ. Phiên thư giãn chạy trong trình duyệt. Mục **Góp ý** trên website dùng Cloudflare Pages và D1. [Cài đặt và đọc góp ý](docs/feedback.md)
+Website thư giãn 3D trên trình duyệt với cừu ra/vào chuồng, nhảy rào, thảm cỏ vải nỉ, âm thanh và hẹn giờ. Phiên thư giãn chạy trong trình duyệt. Mục **Góp ý** trên website dùng Cloudflare Workers và D1. [Cài đặt và đọc góp ý](docs/feedback.md)
 
 ## Cài đặt và chạy
 
