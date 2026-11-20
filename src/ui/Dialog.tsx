@@ -25,7 +25,7 @@ export function Dialog({
       if (event.key === "Escape") close();
       if (event.key !== "Tab") return;
       const controls = Array.from(container.current?.querySelectorAll<HTMLElement>(
-        'button, select, input, [tabindex="0"]',
+        'button, select, input, textarea, [tabindex="0"]',
       ) ?? []).filter(el => !el.matches(':disabled, [inert], [type="hidden"]') && el.getClientRects().length > 0 && !el.closest('[inert]'));
       if (!controls?.length) return;
       const first = controls[0],

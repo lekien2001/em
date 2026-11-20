@@ -85,9 +85,8 @@ test("mixer retains levels, one source minimum, persists without autoplay and to
   await expect(page.locator('.minimal-sound')).toContainText("Bản phối");
   await button(page, "Bắt đầu thư giãn").click();
   await expect(page.locator("main")).toHaveAttribute("data-playing", "true");
-  const state = await page.evaluate(() => (window as any).__emLifecycle.status());
-  expect(state.audio.activeSounds).toEqual(["rain", "stream"]);
-  expect(state.audio.voices).toBe(2);
+  await expect.poll(() => page.evaluate(() => (window as any).__emLifecycle.status().audio.activeSounds)).toEqual(["rain", "stream"]);
+  expect(await page.evaluate(() => (window as any).__emLifecycle.status().audio.voices)).toBe(2);
 });
 test("custom timer, cap, extension, all fade choices and recovery on shared visual/audio deadline", async ({
   page
@@ -275,7 +274,7 @@ test("blocked storage keeps truthful in-memory favorites and favorite apply canc
     exact: true
   })).toBeVisible();
   await button(page, "Bắt đầu thư giãn").click();
-  await expect(button(page, "Đang mở âm thanh")).toBeVisible();
+  await expect(button(page, "Hủy mở âm thanh")).toBeEnabled();
   await button(page, "Áp dụng").click();
   await page.waitForTimeout(1800);
   await expect(page.locator("main")).toHaveAttribute("data-playing", "false");

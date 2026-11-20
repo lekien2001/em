@@ -61,6 +61,17 @@ try{
  await activate(fallback.getByRole('button',{name:'Bắt đầu thư giãn',exact:true}));await expect(fallback.locator('main')).toHaveAttribute('data-playing','true');
  await fallback.keyboard.press('Tab');await expect(fallback.getByRole('button',{name:'Tạm dừng phiên thư giãn',exact:true})).toBeFocused();await fallback.keyboard.press('Space');await expect(fallback.locator('main')).toHaveAttribute('data-playing','false');
  await activate(fallback.getByRole('button',{name:'Tùy chọn',exact:true}));await activate(fallback.getByRole('button',{name:'Phiên yêu thích',exact:true}));await fallback.getByLabel('Lưu cấu hình hiện tại',{exact:true}).fill('Tệp cục bộ');await activate(fallback.getByRole('button',{name:'Lưu',exact:true}));await expect(fallback.getByRole('article',{name:'Tệp cục bộ',exact:true})).toBeVisible();if(fileUrlVerified){await fallback.reload();await expect(fallback.locator('main')).toHaveAttribute('data-playing','false');await activate(fallback.getByRole('button',{name:'Tùy chọn',exact:true}));await activate(fallback.getByRole('button',{name:'Phiên yêu thích',exact:true}));await expect(fallback.getByRole('article',{name:'Tệp cục bộ',exact:true})).toBeVisible();}else{await expect(fallback.getByText(/Thay đổi chỉ được giữ/)).toBeVisible();}
+ await activate(fallback.getByRole('button',{name:'Tùy chọn',exact:true}));
+ await activate(fallback.getByRole('button',{name:'Góp ý',exact:true}));
+ const offlineFeedback=fallback.getByRole('dialog',{name:'Góp ý',exact:true});
+ await expect(offlineFeedback.getByText(/Hãy mở website Êm đã triển khai/)).toBeVisible();
+ await expect(offlineFeedback.getByRole('button',{name:'Gửi góp ý',exact:true})).toBeDisabled();
+ await offlineFeedback.getByLabel('Nội dung góp ý').fill('Xem thử bản nháp offline');
+ await fallback.keyboard.press('Escape');
+ await activate(fallback.getByRole('button',{name:'Tùy chọn',exact:true}));
+ await activate(fallback.getByRole('button',{name:'Góp ý',exact:true}));
+ await expect(offlineFeedback.getByLabel('Nội dung góp ý')).toHaveValue('Xem thử bản nháp offline');
+ report.offlineFeedbackPreview=true;
  report.fileUrlVerified=fileUrlVerified;report.workerAndWebglFallback=true;expect(errors).toEqual([]);expect(network).toEqual([]);
  const recordingPage = await fallbackContext.newPage();
  const recordingRequests = [];
@@ -74,7 +85,11 @@ try{
  expect(recordingRequests).toEqual([]);
  await activate(recordingPage.getByRole('button',{name:'Bắt đầu thư giãn',exact:true}));
  await expect(recordingPage.locator('main')).toHaveAttribute('data-playing','true');
+ await recordingPage.keyboard.press('Tab');
+ await activate(recordingPicker);
+ await activate(recordingPage.getByRole('tab',{name:'Trộn',exact:true}));
  await expect(recordingPage.getByRole('status').filter({hasText:'Đang phát Mưa nhẹ tổng hợp.'})).toBeVisible();
+ await expect(recordingPage.getByRole('button',{name:'Thử lại Mưa bên cửa sổ',exact:true})).toBeVisible();
  await expect(recordingPage.locator('.minimal-sound')).toContainText('Mưa bên cửa sổ');
  expect(recordingRequests.length).toBeGreaterThan(0);
  expect(recordingRequests.every(url=>url.startsWith('https://raw.githubusercontent.com/lekien2001/storage/'))).toBe(true);

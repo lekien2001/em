@@ -2040,6 +2040,8 @@ button:active {
 /* Desktop controls share one scale; touch dialogs keep their existing layout. */
 .app.desktop-immersion { min-height: 0; height: 100dvh; }
 .desktop-immersion .minimal-bar button[aria-expanded="true"] { color: #e1d3f5; background: #cab4e522; box-shadow: inset 0 0 0 1px #c5b2df44; }
+.play-pending { display: grid; place-items: center; }
+.play-pending > * { grid-area: 1 / 1; }
 .play-loading { display: block; width: 19px; height: 19px; border: 2px solid #19233344; border-top-color: #192333; border-right-color: #192333; border-radius: 50%; animation: play-loading 1s linear infinite; }
 @keyframes play-loading { to { transform: rotate(360deg); } }
 .desktop-popover {
@@ -2056,19 +2058,19 @@ button:active {
 .popover-heading h2 { font: 500 20px/1.4 var(--font-ui); margin: 0; letter-spacing: normal; }
 .popover-close, .popover-back { width: var(--control-height); height: var(--control-height); display: grid; place-items: center; border-radius: 12px; color: #b9c8ce; background: transparent; }
 .popover-close:hover, .popover-back:hover { background: #ffffff09; color: #f1eaf9; }
-.desktop-popover:is(.popover-options, .popover-favorites, .popover-timer) {
+.desktop-popover:is(.popover-options, .popover-favorites, .popover-timer, .popover-feedback) {
   /* The visible X extends 5.25px from center. The button extends into the gutter. */
   --heading-button-overhang: calc(5.25px - var(--control-height) / 2);
   padding-inline: 24px;
   scrollbar-gutter: stable both-edges;
   text-align: start;
 }
-:is(.popover-options, .popover-favorites, .popover-timer) .popover-close, .popover-back {
+:is(.popover-options, .popover-favorites, .popover-timer, .popover-feedback) .popover-close, .popover-back {
   flex: none;
   padding: 0;
 }
 :is(.popover-options, .popover-timer) .popover-close { margin-inline-end: var(--heading-button-overhang); }
-.popover-favorites .popover-heading {
+:is(.popover-favorites, .popover-feedback) .popover-heading {
   display: grid;
   grid-template-columns: var(--control-height) minmax(0, 1fr) var(--control-height);
   gap: 8px;
@@ -2145,6 +2147,10 @@ button.setting-row:hover:not(:disabled) { background: #ffffff08; }
 .mix-level input { margin: 0; width: 100%; min-width: 0; min-height: var(--control-height); accent-color: #c6b3df; }
 .mix-level output { width: 40px; flex-shrink: 0; text-align: right; font-size: 12px; color: #b9c8d1; font-variant-numeric: tabular-nums; }
 .mix-level input:disabled { opacity: .3; }
+.mix-status { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 8px 4px; color: #b9c8d1; font-size: 12px; }
+.mix-status[data-status="unavailable"] { color: #ead2ac; }
+.mix-status button { padding: 0 10px; font-size: 12px; border-radius: 8px; border: 1px solid #b9c8d144; }
+.mix-status button:hover { background: #ffffff0d; }
 .custom-timer, .favorites-panel form { margin: 16px 0 10px; }
 .custom-timer label, .favorites-panel label { display: block; margin: 0 0 8px; color: #c5d0d6; font: 400 13px/1.5 var(--font-ui); }
 .inline-fields { display: grid; grid-template-columns: minmax(0, 1fr) var(--action-width); align-items: center; gap: 8px; }
@@ -2177,8 +2183,33 @@ button.setting-row:hover:not(:disabled) { background: #ffffff08; }
 .delete-confirm { margin-top: 12px; padding-top: 10px; border-top: 1px solid #b8c9ce18; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: center; font-size: 12px; }
 .delete-confirm > span { grid-column: 1 / -1; color: #f0c0bd; }
 .sound-picker, .timer-controls, .favorites-panel { font-family: var(--font-ui); font-size: 14px; line-height: 1.5; }
+.feedback-dialog { max-width: 420px; text-align: start; }
+.feedback-form { font: 400 13px/1.5 var(--font-ui); }
+.feedback-fields { margin: 0; padding: 0; border: 0; min-width: 0; }
+.feedback-fields label { display: block; margin: 12px 0 6px; color: #d4dfe4; }
+.feedback-fields > label:first-child { margin-top: 0; }
+.feedback-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.feedback-label span, .feedback-fields label span, .feedback-note { color: #b4c4cd; font-size: 12px; }
+.feedback-fields :is(select, textarea, input) {
+  width: 100%; min-width: 0; min-height: var(--control-height); padding: 9px 12px;
+  border: 1px solid #a6b9c344; border-radius: var(--control-radius); background: #0e20296b;
+  color: #e7e8e7; font: inherit;
+}
+.feedback-fields textarea { display: block; resize: vertical; }
+.feedback-fields select option { background: #1c303a; }
+.feedback-fields :is(select, textarea, input):focus { outline: var(--focus-width) solid var(--focus-color); outline-offset: 1px; }
+.feedback-fields [aria-invalid="true"] { border-color: #f0c0bd; }
+.feedback-note { margin: 6px 0 0; }
+.feedback-status { color: #d6c5ef; }
+.feedback-status:not(:empty) { margin: 12px 0 0; }
+.feedback-form > .modal-primary { margin-top: 12px; padding: 8px 12px; font-size: 13px; }
+.feedback-form > .modal-primary:disabled { opacity: .55; cursor: default; }
+.scene-options .feedback-open { gap: 8px; min-height: 44px; min-width: 44px; }
 @media (max-width: 700px) {
-  .scene-options .favorites-open span:last-child { display: none; }
+  .scene-options :is(.favorites-open, .feedback-open) span:last-child { display: none; }
+  .scene-options { flex-wrap: wrap; justify-content: center; }
+  .feedback-dialog { padding: 18px; }
+  .feedback-fields :is(select, textarea, input) { font-size: 16px; }
 }
 
 /* Card editing replaces normal actions; keep the field full width. */

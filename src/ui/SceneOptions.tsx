@@ -1,5 +1,5 @@
 import type { SheepSpeed } from "../types";
-import { Eye, EyeOff, Leaf, ResetCamera } from "../ui/icons";
+import { Eye, EyeOff, Leaf, Message, ResetCamera } from "../ui/icons";
 import type { ControlsProps } from "./types";
 export function SceneOptions({
   immersion,
@@ -44,6 +44,7 @@ export function SceneOptions({
       <div className={"scene-options"}>
         <button className="small-option favorites-open" aria-label="Phiên yêu thích" title="Phiên yêu thích" onClick={() => setPanel("favorites")}><span aria-hidden="true">♡</span><span>Phiên yêu thích</span></button>
         <button className="small-option face-open" aria-label="Mặt cừu của bạn" title="Mặt cừu của bạn" onClick={() => setPanel("face")}><span aria-hidden="true">☺</span><span>Mặt cừu của bạn</span></button>
+        <button className="small-option feedback-open" aria-label="Góp ý" title="Góp ý" aria-haspopup="dialog" onClick={() => setPanel("feedback")}><Message size={17} /><span>Góp ý</span></button>
         <label className={"speed-control"}>
           <span>{"Tốc độ:"}</span>
           <select

@@ -3,6 +3,7 @@ import { sounds } from "../audio/catalog";
 import {
   ArrowUpRight,
   ChevronDown,
+  CloseIcon,
   Info,
   Moon,
   Move,
@@ -101,12 +102,11 @@ export function TouchControls({
         <button
           {...immersiveProps}
           className={"start-button sleep-hide"}
-          disabled={session.starting}
           onClick={toggleSession}
         >
-          <Play size={15} fill={"currentColor"} />
+          {session.starting ? <CloseIcon size={15} /> : <Play size={15} fill={"currentColor"} />}
           {session.starting
-            ? "Đang mở âm thanh…"
+            ? "Hủy mở âm thanh"
             : count
               ? "Tiếp tục thư giãn"
               : "Bắt đầu thư giãn"}
@@ -161,14 +161,13 @@ export function TouchControls({
               data-pause={true}
               className={"play-button"}
               onClick={toggleSession}
-              disabled={session.starting}
               aria-label={
-                session.playing
+                session.starting ? "Hủy mở âm thanh trong trình phát" : session.playing
                   ? "Tạm dừng phiên thư giãn"
                   : "Phát phiên thư giãn"
               }
             >
-              {session.playing ? (
+              {session.starting ? <CloseIcon size={23} /> : session.playing ? (
                 <Pause size={23} fill={"currentColor"} />
               ) : (
                 <Play size={23} fill={"currentColor"} />

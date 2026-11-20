@@ -29,12 +29,10 @@ test("latest sound, volume and duration chosen during preparation are used on su
   await page
     .getByRole("button", { name: "Bắt đầu thư giãn", exact: true })
     .click();
-  await expect(
-    page.getByRole("button", { name: "Đang mở âm thanh", exact: true }),
-  ).toBeVisible();
+  const cancel = page.getByRole("button", { name: "Hủy mở âm thanh", exact: true });
+  await expect(cancel).toBeEnabled();
   await expect(page.locator('.play-loading')).toBeVisible();
-  await expect(page.getByRole('button',{name:'Đang mở âm thanh',exact:true})).toHaveAttribute('aria-busy','true');
-  await expect(page.getByRole('button',{name:'Đang mở âm thanh',exact:true})).toHaveAttribute('title','Đang mở âm thanh');
+  await expect(cancel).toHaveAttribute('title','Đang mở âm thanh · Bấm để hủy');
   await page.getByRole("button", { name: /^Chọn âm thanh/ }).click();
   await page.getByRole("button", { name: /^Tiếng suối/ }).click();
   await page.getByRole("button", { name: /^Hẹn giờ:/ }).click();
@@ -87,6 +85,32 @@ test("failed buffer preparation keeps the session paused and offers retry", asyn
   await expect(
     page.getByRole("button", { name: "Thử lại", exact: true }),
   ).toBeVisible();
+});
+
+test("a failed synth channel in an opening mix can retry while the ready channel plays", async ({ page }) => {
+  await fallback(page);
+  await page.addInitScript(() => {
+    localStorage.setItem("em:mix-v1", JSON.stringify({
+      rain: { enabled: true, level: 1 }, stream: { enabled: true, level: .5 }, brown: { enabled: false, level: .5 },
+    }));
+    const create = AudioContext.prototype.createBuffer;
+    let prepared = 0;
+    AudioContext.prototype.createBuffer = function (channels, length, rate) {
+      if (length > rate * 30 && ++prepared === 2) throw new Error("Second buffer unavailable");
+      return create.call(this, channels, length, rate);
+    };
+  });
+  await page.goto("/lifecycle-qa.html");
+  await page.evaluate(() => (window as any).__emLifecycle.mountApp());
+  await page.getByRole("button", { name: /^Chọn âm thanh/ }).click();
+  await page.getByRole("button", { name: "Bắt đầu thư giãn", exact: true }).click();
+  await expect(page.locator("main")).toHaveAttribute("data-playing", "true");
+  const retry = page.getByRole("button", { name: /^Thử lại (Mưa nhẹ|Tiếng suối)$/ });
+  await expect(retry).toBeVisible();
+  await retry.click();
+  for (const sound of ["Mưa nhẹ", "Tiếng suối"])
+    await expect(page.getByRole("status", { name: `${sound}: Đang phát`, exact: true })).toBeVisible();
+  await expect(page.locator("main")).toHaveAttribute("data-playing", "true");
 });
 
 for (const minutes of [30, 60])

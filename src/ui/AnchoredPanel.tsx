@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { ArrowLeft, CloseIcon } from "./icons";
 import { placePanel, type PanelPlacement } from "./panelPlacement";
-import type { DesktopPanel } from "./types";
+import { panelTrigger, type DesktopPanel } from "./types";
 export function AnchoredPanel({
   panel,
   title,
@@ -21,12 +21,13 @@ export function AnchoredPanel({
   const content = useRef<HTMLDivElement>(null);
   const [placement, setPlacement] = useState<PanelPlacement | null>(null);
   const latestClose = useRef(close);
+  const anchorSelector = `[data-panel-trigger="${panelTrigger(panel)}"]`;
   latestClose.current = close;
   useLayoutEffect(() => {
     const element = container.current,
       body = content.current,
       bar = barRef.current;
-    const anchor = bar?.querySelector<HTMLElement>(`[data-panel-trigger="${panel === "favorites" ? "options" : panel}"]`);
+    const anchor = bar?.querySelector<HTMLElement>(anchorSelector);
     if (!element || !body || !bar || !anchor) return;
     let measured: PanelPlacement | undefined;
     let measurementFrame = 0;
@@ -63,7 +64,7 @@ export function AnchoredPanel({
       window.removeEventListener("resize", queueMeasure);
       window.visualViewport?.removeEventListener("resize", queueMeasure);
     };
-  }, [panel, barRef]);
+  }, [panel, barRef, anchorSelector]);
   const positioned = placement !== null;
   useLayoutEffect(() => {
     if (!positioned || !container.current) return;
@@ -82,7 +83,7 @@ export function AnchoredPanel({
       if (event.key !== "Escape") return;
       event.preventDefault();
       event.stopPropagation();
-      barRef.current?.querySelector<HTMLElement>(`[data-panel-trigger="${panel === "favorites" ? "options" : panel}"]`)?.focus({
+      barRef.current?.querySelector<HTMLElement>(anchorSelector)?.focus({
         preventScroll: true
       });
       latestClose.current();
@@ -95,9 +96,9 @@ export function AnchoredPanel({
       document.removeEventListener("focusin", outside);
       document.removeEventListener("keydown", key);
     };
-  }, [panel, barRef]);
+  }, [anchorSelector, barRef]);
   const dismiss = () => {
-    barRef.current?.querySelector<HTMLElement>(`[data-panel-trigger="${panel === "favorites" ? "options" : panel}"]`)?.focus();
+    barRef.current?.querySelector<HTMLElement>(anchorSelector)?.focus();
     close();
   };
   return <div ref={container} id={`desktop-panel-${panel}`} data-panel={panel} data-side={placement?.side} data-immersive-ui="true" className={`desktop-popover popover-${panel}`} role="dialog" aria-modal="false" aria-label={title} tabIndex={-1} style={{

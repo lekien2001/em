@@ -3,10 +3,13 @@ import type { Sound } from "../audio/catalog";
 import type { RelaxationSession } from "../session/useRelaxationSession";
 import type { SheepSpeed } from "../types";
 import type { useImmersiveControls } from "./useImmersiveControls";
-export type Panel = "library" | "volume" | "timer" | "options" | "about" | "face" | "favorites" | null;
-export type DesktopPanel = "library" | "volume" | "timer" | "options" | "favorites";
+export type DesktopPanel = "library" | "volume" | "timer" | "options" | "favorites" | "feedback";
+export type Panel = DesktopPanel | "about" | "face" | null;
 export function isDesktopPanel(panel: Panel): panel is DesktopPanel {
-  return panel === "library" || panel === "volume" || panel === "timer" || panel === "options" || panel === "favorites";
+  return panel !== null && panel !== "about" && panel !== "face";
+}
+export function panelTrigger(panel: DesktopPanel) {
+  return panel === "favorites" || panel === "feedback" ? "options" : panel;
 }
 /** Shared UI data; each component receives only its required fields via Pick. */
 export type ControlsProps = {

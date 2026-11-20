@@ -1,5 +1,6 @@
 import {
   ChevronDown,
+  CloseIcon,
   MoreHorizontal,
   Pause,
   Play,
@@ -7,7 +8,7 @@ import {
   Volume,
   VolumeOff,
 } from "../ui/icons";
-import type { ControlsProps } from "./types";
+import { isDesktopPanel, panelTrigger, type ControlsProps } from "./types";
 export function Toolbar({
   hasStarted,
   immersiveProps,
@@ -30,6 +31,7 @@ export function Toolbar({
   | "barRef"
 >) {
   const togglePanel = (next: "library" | "volume" | "timer" | "options") => setPanel(current => current === next ? null : next);
+  const optionsOpen = isDesktopPanel(panel) && panelTrigger(panel) === "options";
   return (
     <div
       ref={barRef}
@@ -42,20 +44,18 @@ export function Toolbar({
         data-pause={true}
         className={"minimal-play"}
         onClick={toggleSession}
-        disabled={session.starting}
         aria-label={
           session.starting
-            ? "Đang mở âm thanh"
+            ? "Hủy mở âm thanh"
             : session.playing
               ? "Tạm dừng phiên thư giãn"
               : hasStarted
                 ? "Phát phiên thư giãn"
                 : "Bắt đầu thư giãn"
         }
-        title={session.starting ? "Đang mở âm thanh" : session.playing ? "Tạm dừng" : "Phát"}
-        aria-busy={session.starting}
+        title={session.starting ? "Đang mở âm thanh · Bấm để hủy" : session.playing ? "Tạm dừng" : "Phát"}
       >
-        {session.starting ? <span className="play-loading" aria-hidden="true" /> : session.playing ? (
+        {session.starting ? <span className="play-pending" aria-hidden="true"><span className="play-loading" /><CloseIcon size={10} /></span> : session.playing ? (
           <Pause size={20} fill={"currentColor"} />
         ) : (
           <Play size={20} fill={"currentColor"} />
@@ -103,11 +103,11 @@ export function Toolbar({
       <button
         onClick={() => togglePanel("options")}
         data-panel-trigger="options"
-        aria-controls={(panel === "options" || panel === "favorites") ? `desktop-panel-${panel}` : undefined}
+        aria-controls={optionsOpen ? `desktop-panel-${panel}` : undefined}
         aria-label={"Tùy chọn"}
         title={"Tùy chọn"}
         aria-haspopup={"dialog"}
-        aria-expanded={panel === "options" || panel === "favorites"}
+        aria-expanded={optionsOpen}
       >
         <MoreHorizontal size={21} />
       </button>

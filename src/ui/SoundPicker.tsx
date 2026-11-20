@@ -3,6 +3,9 @@ import { sounds } from "../audio/catalog";
 import { copyMix } from "../session/config";
 import type { RelaxationSession } from "../session/useRelaxationSession";
 import { Check } from "./icons";
+
+const statusLabels = { loading: "Đang tải", playing: "Đang phát", unavailable: "Chưa phát được" };
+
 export function SoundPicker({
   session,
   close
@@ -28,10 +31,12 @@ export function SoundPicker({
             close();
           }}><span className={`sound-art ${sound.art}`} aria-hidden="true" /><span className="sound-label">{sound.label}</span><span className="compact-check">{selected && <Check size={17} />}</span></button>;
         })}</div> : <div className="mix-rows">{sounds.map(sound => {
-          const channel = session.mix[sound.id],
-            only = channel.enabled && session.activeSounds.length === 1;
+          const channel = session.mix[sound.id];
+          const only = channel.enabled && session.activeSounds.length === 1;
+          const status = channel.enabled ? session.playback.channels[sound.id] : undefined;
+          const statusId = `sound-status-${sound.id}`;
           return <div className="mix-row" key={sound.id}>
-        <button role="switch" className="setting-row setting-toggle" aria-label={sound.label} aria-checked={channel.enabled} disabled={only} title={only ? "Giữ ít nhất một âm thanh trong bản phối" : undefined} onClick={() => {
+        <button role="switch" className="setting-row setting-toggle" aria-label={sound.label} aria-checked={channel.enabled} aria-describedby={status ? statusId : undefined} disabled={only} title={only ? "Giữ ít nhất một âm thanh trong bản phối" : undefined} onClick={() => {
               const next = copyMix(session.mix);
               next[sound.id].enabled = !channel.enabled;
               session.setMix(next);
@@ -41,10 +46,19 @@ export function SoundPicker({
                 next[sound.id].level = Number(event.target.value);
                 session.setMix(next);
               }} /><output>{Math.round(channel.level * 100)}%</output></div>
+        {status && <div className="mix-status" data-status={status}>
+          <span id={statusId} role="status" aria-label={`${sound.label}: ${statusLabels[status]}`}>{statusLabels[status]}</span>
+          {status === "unavailable" && <button type="button" aria-label={`Thử lại ${sound.label}`} onClick={event => {
+            event.currentTarget.closest(".mix-row")?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
+            session.retrySound(sound.id);
+          }}>Thử lại</button>}
+        </div>}
       </div>;
         })}<p className="popover-note">Giữ ít nhất một âm thanh. Âm lượng tổng điều chỉnh toàn bộ bản phối.</p></div>}
     </div>
     {session.mixError && <p className="form-error" role="alert">{session.mixError}</p>}
-    {session.audioNotice && !session.mixError && <p className="popover-note" role="status">{session.audioNotice}</p>}
+    {session.playback.fallbackRain && <p className="popover-note" role="status">
+      Đang phát Mưa nhẹ tổng hợp.{Object.values(session.playback.channels).includes("loading") && " Âm đã chọn sẽ hòa vào khi tải xong."}
+    </p>}
   </div>;
 }

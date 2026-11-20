@@ -18,8 +18,11 @@ import { formatRemaining, type FavoriteConfig } from "../session/config";
 import type { Favorite } from "../session/favorites";
 import { FavoritesPanel } from "../ui/FavoritesPanel";
 import { DesktopSettings } from "../ui/DesktopSettings";
+import { useFeedback } from "../feedback/useFeedback";
+import { FeedbackPanel } from "../ui/FeedbackPanel";
 export function App() {
   const favorites = useFavorites();
+  const feedback = useFeedback();
   const [endDimDismissed, setEndDimDismissed] = React.useState(false);
   const personalFace = usePersonalFace();
   const barRef = React.useRef<HTMLDivElement>(null);
@@ -77,7 +80,7 @@ export function App() {
   }, [sleep, immersion.desktop]);
   const timerLabel = formatRemaining(session.remaining);
   function toggleSession() {
-    session.ended && (setCount(0), setSessionId((x) => x + 1));
+    if (session.ended && !session.starting) { setCount(0); setSessionId(x => x + 1); }
     setEndDimDismissed(false);
     session.toggle();
   }
@@ -106,6 +109,7 @@ export function App() {
       sceneReady={sceneReady}
       faceApplied={!!personalFace.photo}
       openFavorites={() => setPanel("favorites")}
+      openFeedback={() => setPanel("feedback")}
       reset={() => { closePanel(); setReset(x => x + 1); }}
       dim={() => { closePanel(); setSleep(true); }}
       openFace={() => {
@@ -132,6 +136,7 @@ export function App() {
     <FavoritesPanel favorites={favorites} current={configuration} apply={applyFavorite}
       back={immersion.desktop ? undefined : closePanel} />
   );
+  const feedbackContent = <FeedbackPanel feedback={feedback} />;
   const automaticDim = session.ended && endDimDismissed ? 0 : .7 * (1 - session.fade);
   return (
     <main
@@ -254,15 +259,12 @@ export function App() {
           {session.mixError}<button onClick={() => setPanel("library")}>Chỉnh bản phối</button>
         </div>
       )}
-      {session.noticeVisible && !session.mixError && panel !== "library" && (
-        <div className="audio-error" role="status">{session.audioNotice}</div>
-      )}
       {personalFace.error && <div className="audio-error" role="alert">{personalFace.error}<button onClick={personalFace.restore}>Khôi phục</button></div>}
       {panel === "face" && <FaceEditor face={personalFace} close={closePanel} sceneReady={sceneReady} />}
 
       {immersion.desktop ? (
         <DesktopPanels panel={panel} barRef={barRef} closePanel={closePanel} session={session} timerLabel={timerLabel}
-          settings={desktopSettings} favorites={favoritesContent} backToOptions={() => setPanel("options")} />
+          settings={desktopSettings} favorites={favoritesContent} feedback={feedbackContent} backToOptions={() => setPanel("options")} />
       ) : <SessionPanels
         closePanel={closePanel}
         immersion={immersion}
@@ -270,6 +272,7 @@ export function App() {
         session={session}
         toggleSession={toggleSession}
         favorites={favoritesContent}
+        feedback={feedbackContent}
       />}
     </main>
   );

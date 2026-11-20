@@ -3,7 +3,7 @@ import { SoundPicker } from "./SoundPicker";
 import { TimerControls } from "./TimerControls";
 import { AnchoredPanel } from "./AnchoredPanel";
 import { Volume, VolumeOff } from "./icons";
-import { isDesktopPanel, type ControlsProps } from "./types";
+import { isDesktopPanel, panelTrigger, type ControlsProps } from "./types";
 export function DesktopPanels({
   panel,
   barRef,
@@ -11,10 +11,12 @@ export function DesktopPanels({
   session,
   settings,
   favorites,
+  feedback,
   backToOptions,
 }: Pick<ControlsProps, "panel" | "barRef" | "closePanel" | "session" | "timerLabel"> & {
   settings: ReactNode;
   favorites: ReactNode;
+  feedback: ReactNode;
   backToOptions(): void;
 }) {
   if (!isDesktopPanel(panel)) return null;
@@ -23,16 +25,18 @@ export function DesktopPanels({
     volume: "Âm lượng",
     timer: "Hẹn giờ",
     options: "Tùy chọn",
-    favorites: "Phiên yêu thích"
+    favorites: "Phiên yêu thích",
+    feedback: "Góp ý",
   };
   const close = () => {
-    barRef.current?.querySelector<HTMLElement>(`[data-panel-trigger="${panel === "favorites" ? "options" : panel}"]`)?.focus();
+    barRef.current?.querySelector<HTMLElement>(`[data-panel-trigger="${panelTrigger(panel)}"]`)?.focus();
     closePanel();
   };
   return <AnchoredPanel key={panel} panel={panel} title={titles[panel]} barRef={barRef} close={closePanel}
-    back={panel === "favorites" ? backToOptions : undefined}>
+    back={panel !== "options" && panelTrigger(panel) === "options" ? backToOptions : undefined}>
     {panel === "options" && settings}
     {panel === "favorites" && favorites}
+    {panel === "feedback" && feedback}
     {panel === "library" && <SoundPicker session={session} close={close} />}
     {panel === "volume" && <div className="compact-volume">
       <button className="volume-mute" onClick={session.toggleMute} aria-label={session.volume ? "Tắt tiếng" : "Bật tiếng"} title={session.volume ? "Tắt tiếng" : "Bật tiếng"}>{session.volume ? <Volume size={19} /> : <VolumeOff size={19} />}</button>

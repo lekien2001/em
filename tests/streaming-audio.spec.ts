@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { getRecording } from "../src/audio/catalog";
-import { singleMix } from "../src/session/config";
+import { singleMix, type MixConfig } from "../src/session/config";
+import type { RecordingId } from "../src/types";
 import { buildAudioHarness } from "./support/build-audio-harness";
 
 test.beforeAll(buildAudioHarness);
@@ -59,6 +60,148 @@ async function serveWave(page: Page, fail = () => false) {
   });
   return () => requests;
 }
+
+async function holdRecording(page: Page, id: RecordingId) {
+  let release!: (allow: boolean) => void;
+  let held = true;
+  const decision = new Promise<boolean>(resolve => { release = resolve; });
+  const url = getRecording(id).url;
+  await page.route(url, async route => {
+    try {
+      if (held && !await decision) await route.abort();
+      else await route.fallback();
+    } catch { /* The browser may already have cancelled the request. */ }
+  });
+  return {
+    release(allow = true) { release(allow); held = false; },
+    url,
+  };
+}
+
+async function appWithMix(page: Page, mix: MixConfig) {
+  await page.addInitScript(config => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+      return type.includes("webgl") ? null : (getContext as Function).call(this, type, ...args);
+    } as typeof getContext;
+    localStorage.setItem("em:mix-v1", JSON.stringify(config));
+  }, mix);
+  await page.goto("/");
+}
+
+async function openMixer(page: Page) {
+  await page.getByRole("button", { name: /^Chọn âm thanh/ }).click();
+  await page.getByRole("tab", { name: "Trộn", exact: true }).click();
+}
+
+const begin = (page: Page) => page.getByRole("button", { name: "Bắt đầu thư giãn", exact: true });
+const channelStatus = (page: Page, sound: string, status: string) =>
+  page.getByRole("status", { name: `${sound}: ${status}`, exact: true });
+
+test("the session starts with a ready channel while a stalled recording can be retried alone", async ({ page }) => {
+  await captureDecks(page);
+  const requests = await serveWave(page);
+  const held = await holdRecording(page, "rain-window");
+  const mix = singleMix("rain");
+  mix["rain-window"].enabled = true;
+  await appWithMix(page, mix);
+  await openMixer(page);
+  try {
+    const blocked = page.waitForRequest(held.url);
+    await begin(page).click();
+    await blocked;
+    await expect(page.locator("main")).toHaveAttribute("data-playing", "true", { timeout: 3000 });
+    await expect(channelStatus(page, "Mưa nhẹ", "Đang phát")).toBeVisible();
+    await expect(channelStatus(page, "Mưa bên cửa sổ", "Đang tải")).toBeVisible();
+    expect(requests()).toBe(0);
+    const remaining = Number(await page.locator("main").getAttribute("data-remaining"));
+    held.release(false);
+    await expect(channelStatus(page, "Mưa bên cửa sổ", "Chưa phát được")).toBeVisible();
+    await page.getByRole("button", { name: "Thử lại Mưa bên cửa sổ", exact: true }).click();
+    await expect(channelStatus(page, "Mưa bên cửa sổ", "Đang phát")).toBeVisible();
+    await expect(channelStatus(page, "Mưa nhẹ", "Đang phát")).toBeVisible();
+    expect(Number(await page.locator("main").getAttribute("data-remaining"))).toBeLessThanOrEqual(remaining);
+    expect(requests()).toBeGreaterThan(0);
+  } finally { held.release(); }
+});
+
+test("a slow solo recording uses temporary rain and takes over without resetting the timer", async ({ page }) => {
+  await serveWave(page);
+  const held = await holdRecording(page, "mouth-asmr");
+  await appWithMix(page, singleMix("mouth-asmr"));
+  await openMixer(page);
+  try {
+    await begin(page).click();
+    await expect(page.getByRole("button", { name: "Hủy mở âm thanh" })).toBeEnabled();
+    await expect(page.locator("main")).toHaveAttribute("data-playing", "false");
+    const fallback = page.getByRole("status").filter({ hasText: "Đang phát Mưa nhẹ tổng hợp." });
+    await expect(fallback).toBeVisible({ timeout: 3000 });
+    await expect(channelStatus(page, "Âm miệng ASMR", "Đang tải")).toBeVisible();
+    await expect(page.locator("main")).toHaveAttribute("data-playing", "true");
+    const remaining = Number(await page.locator("main").getAttribute("data-remaining"));
+    held.release();
+    await expect(channelStatus(page, "Âm miệng ASMR", "Đang phát")).toBeVisible();
+    await expect(fallback).toHaveCount(0);
+    expect(Number(await page.locator("main").getAttribute("data-remaining"))).toBeLessThanOrEqual(remaining);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("em:mix-v1")!).rain.enabled)).toBe(false);
+  } finally { held.release(); }
+});
+
+test("cancelling startup or pausing an active mix discards held audio", async ({ page }) => {
+  await captureDecks(page);
+  await serveWave(page);
+  await page.clock.install();
+  const held = await holdRecording(page, "rain-window");
+  await appWithMix(page, singleMix("rain-window"));
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 50));
+  try {
+    const blocked = page.waitForRequest(held.url);
+    await begin(page).click();
+    await blocked;
+    await page.getByRole("button", { name: "Hủy mở âm thanh", exact: true }).click();
+    await page.clock.fastForward(6000);
+    await expect(begin(page)).toBeEnabled();
+    await expect(page.locator("main")).toHaveAttribute("data-playing", "false");
+    await expect(page.locator("main")).toHaveAttribute("data-remaining", "1800000");
+    await openMixer(page);
+    await page.getByRole("switch", { name: "Mưa nhẹ", exact: true }).click();
+    await begin(page).click();
+    await expect(channelStatus(page, "Mưa nhẹ", "Đang phát")).toBeVisible();
+    await expect(channelStatus(page, "Mưa bên cửa sổ", "Đang tải")).toBeVisible();
+    await page.getByRole("button", { name: "Tạm dừng phiên thư giãn", exact: true }).click();
+    held.release();
+    await page.clock.fastForward(6000);
+    await expect(page.locator("main")).toHaveAttribute("data-playing", "false");
+    await expect(channelStatus(page, "Mưa bên cửa sổ", "Đang phát")).toHaveCount(0);
+    expect(await page.evaluate(() => (window as any).__decks.every((audio: HTMLAudioElement) => !audio.hasAttribute("src")))).toBe(true);
+  } finally { held.release(); }
+});
+
+test("a recording that finishes loading after the deadline does not join the session", async ({ page }) => {
+  await captureDecks(page);
+  await serveWave(page);
+  await page.clock.install();
+  const held = await holdRecording(page, "lego-asmr");
+  const mix = singleMix("rain");
+  mix["lego-asmr"].enabled = true;
+  await appWithMix(page, mix);
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 50));
+  try {
+    await openMixer(page);
+    await begin(page).click();
+    await expect(page.locator("main")).toHaveAttribute("data-playing", "true");
+    await expect(channelStatus(page, "Lục hộp LEGO", "Đang tải")).toBeVisible();
+    const endTime = await page.evaluate(() => Date.now() + 1800001);
+    await page.clock.setSystemTime(endTime);
+    held.release();
+    await expect.poll(() => page.evaluate(() => (window as any).__decks.some((audio: HTMLAudioElement) => audio.currentTime > .75))).toBe(true);
+    await expect(channelStatus(page, "Lục hộp LEGO", "Đang phát")).toHaveCount(0);
+    await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+    await expect(page.locator("main")).toHaveAttribute("data-playing", "false");
+    await expect(page.locator("main")).toHaveAttribute("data-remaining", "0");
+    expect(await page.evaluate(() => (window as any).__decks.every((audio: HTMLAudioElement) => !audio.hasAttribute("src")))).toBe(true);
+  } finally { held.release(); }
+});
 
 test("native streaming loops with two decks and pause stops both near the seam", async ({ page }) => {
   const errors: string[] = [];

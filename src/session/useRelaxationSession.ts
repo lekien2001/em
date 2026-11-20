@@ -1,8 +1,8 @@
 import { useEffect, useReducer, useRef, useState, type SetStateAction } from "react";
-import { AudioEngine } from "../audio/AudioEngine";
+import { AudioEngine, type PlaybackStatus } from "../audio/AudioEngine";
 import { sounds } from "../audio/catalog";
 import type { FadeSeconds, SoundId } from "../types";
-import { copyMix, enabledSounds, mixKey, restoreMix, singleMix, validFade, validMix, type MixConfig, type SessionConfig } from "./config";
+import { copyMix, enabledSounds, restoreMix, singleMix, validFade, validMix, type MixConfig, type SessionConfig } from "./config";
 import { SessionTimer } from "./SessionTimer";
 import { readPreference, writePreference } from "./preferences";
 const audioError = "Chưa thể phát âm thanh. Hãy thử lại hoặc chọn âm thanh khác.";
@@ -31,8 +31,7 @@ export function useRelaxationSession() {
   const [starting, setStarting] = useState(false),
     [error, setError] = useState(""),
     [mixError, setMixError] = useState(""),
-    [audioNotice, setAudioNotice] = useState(""),
-    [noticeVisible, setNoticeVisible] = useState(false);
+    [playback, setPlayback] = useState<PlaybackStatus>({ channels: {}, fallbackRain: false });
   const audio = useRef<AudioEngine | null>(null),
     mounted = useRef(true),
     operation = useRef(0),
@@ -64,12 +63,6 @@ export function useRelaxationSession() {
   useEffect(() => {
     writePreference("fade-seconds", String(timer.fadeSeconds));
   }, [timer.fadeSeconds]);
-  useEffect(() => {
-    if (!audioNotice) return;
-    setNoticeVisible(true);
-    const timeout = setTimeout(() => setNoticeVisible(false), 5500);
-    return () => clearTimeout(timeout);
-  }, [audioNotice]);
   function envelope() {
     if (timer.running) audio.current?.envelope(latestVolume.current, timer.remaining, timer.windowMs, timer.recoveryMs, timer.fade);
   }
@@ -90,7 +83,6 @@ export function useRelaxationSession() {
     latestMix.current = next;
     updateMix(next);
     setMixError("");
-    if (retry || (!timer.running && !pending.current)) setAudioNotice("");
     if ((!timer.running && !pending.current) || !audio.current) return;
     const engine = audio.current;
     void engine.setMix(next, transition, retry).catch(() => {
@@ -103,6 +95,9 @@ export function useRelaxationSession() {
   function setSound(sound: SoundId) {
     setMix(singleMix(sound, latestMix.current), .8, sound);
   }
+  function retrySound(sound: SoundId) {
+    if (latestMix.current[sound].enabled) setMix(latestMix.current, .8, sound);
+  }
   function pause() {
     operation.current++;
     mixOperation.current++;
@@ -113,8 +108,7 @@ export function useRelaxationSession() {
     refresh();
   }
   async function toggle() {
-    if (pending.current) return;
-    if (timer.running) {
+    if (pending.current || timer.running) {
       pause();
       return;
     }
@@ -123,22 +117,12 @@ export function useRelaxationSession() {
     setStarting(true);
     setError("");
     setMixError("");
-    setAudioNotice("");
     try {
-      const engine = audio.current ??= new AudioEngine((missing, usingRain) => {
-        if (!mounted.current) return;
-        const labels = sounds.filter(sound => missing.some(id => id === sound.id)).map(sound => sound.label);
-        setAudioNotice(labels.length
-          ? `Chưa phát được ${labels.join(", ")}. ${usingRain ? "Đang phát Mưa nhẹ tổng hợp." : "Các âm còn lại vẫn đang phát."}`
-          : "");
-      });
-      let requested = copyMix(latestMix.current);
-      let committed = await engine.start(requested);
-      while (mounted.current && token === operation.current && (!committed || mixKey(latestMix.current) !== mixKey(requested))) {
-        requested = copyMix(latestMix.current);
-        committed = await engine.setMix(requested, .8);
-      }
-      if (!mounted.current || token !== operation.current || audio.current !== engine) return;
+      const engine = audio.current ??= new AudioEngine(status => {
+        if (mounted.current) setPlayback(status);
+      }, () => timer.running && timer.remaining === 0);
+      const started = await engine.start(latestMix.current);
+      if (!started || !mounted.current || token !== operation.current || audio.current !== engine) return;
       timer.start();
       envelope();
       refresh();
@@ -217,7 +201,6 @@ export function useRelaxationSession() {
     writePreference("last-volume", String(config.lastVolume));
     setError("");
     setMixError("");
-    setAudioNotice("");
     refresh();
   }
   const activeSounds = enabledSounds(mix),
@@ -241,8 +224,8 @@ export function useRelaxationSession() {
     ended: timer.ended,
     error,
     mixError,
-    audioNotice,
-    noticeVisible: !!audioNotice && noticeVisible,
+    playback,
+    retrySound,
     fade: timer.fade,
     fadeSeconds: timer.fadeSeconds,
     changeFade,

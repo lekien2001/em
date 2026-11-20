@@ -12,6 +12,7 @@ export function SessionPanels({
   panel,
   session,
   favorites,
+  feedback,
 }: Pick<
   ControlsProps,
   | "closePanel"
@@ -19,12 +20,13 @@ export function SessionPanels({
   | "panel"
   | "session"
   | "toggleSession"
-> & { favorites: ReactNode }) {
+> & { favorites: ReactNode; feedback: ReactNode }) {
   return (
     <>
       {panel === "library" && <Dialog title="Âm thanh" close={closePanel}><SoundPicker session={session} close={closePanel} /></Dialog>}
       {panel === "timer" && <Dialog title="Hẹn giờ" close={closePanel}><TimerControls session={session} /></Dialog>}
       {panel === "favorites" && <Dialog title="Phiên yêu thích" close={closePanel}>{favorites}</Dialog>}
+      {panel === "feedback" && <Dialog title="Góp ý" className="feedback-dialog" close={closePanel} compact>{feedback}</Dialog>}
       {panel === "about" && (
         <Dialog
           title={"Một góc nhỏ để trở về."}
@@ -37,7 +39,7 @@ export function SessionPanels({
           </p>
           <p className={"about-copy"}>
             {
-              "Lựa chọn âm thanh và âm lượng chỉ được lưu trên thiết bị của bạn. Không cần tài khoản, không gửi dữ liệu lên máy chủ."
+              "Lựa chọn âm thanh và âm lượng được lưu trên thiết bị của bạn. Khi bạn bấm Gửi góp ý, Êm lưu chủ đề, nội dung và email nếu bạn cung cấp."
             }
           </p>
           <p className={"modal-note"}>

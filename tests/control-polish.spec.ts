@@ -139,7 +139,7 @@ for (const [width, height] of [[1366, 768], [1440, 900], [1920, 1080]]) {
         }));
         expect(Math.max(...slots.map(s => s.center)) - Math.min(...slots.map(s => s.center))).toBeLessThanOrEqual(1);
         expect(slots.every(s => s.dx <= 1 && s.dy <= 1)).toBe(true);
-        await expect(page.locator('.desktop-settings .setting-chevron')).toHaveCount(2);
+        await expect(page.locator('.desktop-settings .setting-chevron')).toHaveCount(3);
         expect(await page.locator('.desktop-settings .setting-chevron').evaluateAll(els => els.every(el => el.tagName.toLowerCase() === 'svg'))).toBe(true);
         await page.getByRole('switch', { name: 'Giảm chuyển động' }).click();
         await alignedPanel(settingsPanel, settingsLeftEdges, '.setting-slot, .speed-segments');
@@ -156,6 +156,13 @@ for (const [width, height] of [[1366, 768], [1440, 900], [1920, 1080]]) {
         await alignedPanel(favoritesPanel, favoritesLeftEdges, '.favorites-panel .inline-fields');
         await withinViewport(page);
         await page.keyboard.press('Escape');
+        await expect(settingsTrigger).toBeFocused();
+        await settingsTrigger.click();
+        await settingsPanel.getByRole('button', { name: 'Góp ý', exact: true }).click();
+        const feedbackPanel = page.getByRole('dialog', { name: 'Góp ý', exact: true });
+        await alignedPanel(feedbackPanel, '.feedback-fields > label, .feedback-label > label', '.feedback-fields :is(select, textarea, input[type="email"]), .feedback-form > button');
+        await withinViewport(page);
+        await feedbackPanel.getByRole('button', { name: 'Đóng', exact: true }).click();
         await expect(settingsTrigger).toBeFocused();
         await page.getByRole('button', { name: /^Chọn âm thanh/ }).click(); await page.getByRole('tab', { name: 'Trộn', exact: true }).click();
         const mix = await page.locator('.mix-level').evaluateAll(els => els.map(el => { const a = el.querySelector('input')!.getBoundingClientRect(), b = el.querySelector('output')!.getBoundingClientRect(); return { h: a.height, dy: Math.abs(a.y + a.height / 2 - b.y - b.height / 2), right: b.right }; }));

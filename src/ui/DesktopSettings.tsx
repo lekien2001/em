@@ -26,7 +26,8 @@ export function DesktopSettings({
   dim,
   openFace,
   faceApplied,
-  openFavorites
+  openFavorites,
+  openFeedback,
 }: {
   speed: SheepSpeed;
   setSpeed: Dispatch<SetStateAction<SheepSpeed>>;
@@ -40,6 +41,7 @@ export function DesktopSettings({
   openFace(): void;
   faceApplied: boolean;
   openFavorites(): void;
+  openFeedback(): void;
 }) {
   return <div className="desktop-settings">
     <section aria-label="Cảnh"><h3>Cảnh</h3>
@@ -61,6 +63,9 @@ export function DesktopSettings({
       <button className="setting-row setting-face" aria-label="Mặt cừu của bạn" onClick={openFace}>
         <span><span>Mặt cừu của bạn</span><small>{faceApplied ? "Đã thêm ảnh" : "Chưa chọn ảnh"}</small></span><span className="setting-slot" aria-hidden="true"><ChevronDown className="setting-chevron" size={18} /></span>
       </button>
+    </section>
+    <section aria-label="Phản hồi">
+      <button className="setting-row setting-action" onClick={openFeedback}><span>Góp ý</span><span className="setting-slot" aria-hidden="true"><ChevronDown className="setting-chevron" size={18} /></span></button>
     </section>
   </div>;
 }
